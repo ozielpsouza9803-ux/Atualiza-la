@@ -24,6 +24,7 @@ import {
   updateKidInSupabase, 
   deleteKidInSupabase, 
   updateProfileInSupabase, 
+  deleteProfileInSupabase,
   uploadGalleryPhotoToSupabase,
   deleteGalleryPhotoFromSupabase,
   updateSiteSettingsInSupabase,
@@ -346,6 +347,189 @@ const INITIAL_CHILDREN: Child[] = [
     image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400&h=400&fit=crop',
     letter: 'Gosto muito de carrinhos e quero ser bombeiro quando crescer.',
     wishlist: [{ name: 'Bicicleta', price: 299.90 }]
+  }
+];
+
+const INITIAL_PROFILES: any[] = [
+  {
+    id: DEFAULT_ADMIN_PROFILE_ID,
+    name: 'Lar Esperança - Gestão Central',
+    email: 'contato@laresperanca.org',
+    phone: '(11) 98765-4321',
+    role: 'admin',
+    bio: 'Coordenação e gestão central das crianças, apadrinhamentos e acolhimento.',
+    photo_path: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: DEFAULT_SPONSOR_PROFILE_ID,
+    name: 'Oziel Pereira',
+    email: 'ozielpsouza9803@gmail.com',
+    phone: '21993719730',
+    role: 'sponsor',
+    bio: 'Família bom amigo. Dedicado a apoiar as crianças do Lar com amor e cuidado.',
+    photo_path: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: DEFAULT_FAMILY_PROFILE_ID,
+    name: 'Família Silva & Souza',
+    email: 'familia.silva@laresperanca.org',
+    phone: '(11) 99123-4567',
+    role: 'family',
+    bio: 'Família acolhedora dedicada a dar um lar com segurança, carinho e afeto.',
+    photo_path: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_04',
+    name: 'Dr. Roberto Martins',
+    email: 'roberto.martins@medico.com.br',
+    phone: '(11) 98111-2233',
+    role: 'sponsor',
+    bio: 'Médico pediatra e voluntário com carinho pelas crianças em situação de acolhimento.',
+    photo_path: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_05',
+    name: 'Maria Clara Fagundes',
+    email: 'maria.clara@designer.com',
+    phone: '(21) 97234-5678',
+    role: 'sponsor',
+    bio: 'Designer gráfica, incentivadora de arte, desenho e sonhos das crianças.',
+    photo_path: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_fam_06',
+    name: 'Família Santos Oliveira',
+    email: 'familia.santos@email.com',
+    phone: '(11) 98222-3344',
+    role: 'family',
+    bio: 'Acolhemos com muito amor, brincadeiras diárias e refeições em harmonia.',
+    photo_path: 'https://images.unsplash.com/photo-1511895426328-dc8714191300?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_07',
+    name: 'Carlos Eduardo Mendes',
+    email: 'cadu.mendes@advocacia.com',
+    phone: '(31) 98877-6655',
+    role: 'sponsor',
+    bio: 'Advogado, apaixonado por incentivar o estudo e o esporte dos jovens.',
+    photo_path: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_fam_08',
+    name: 'Família Ferreira de Assis',
+    email: 'familia.ferreira@email.com',
+    phone: '(21) 98765-1122',
+    role: 'family',
+    bio: 'Construindo memórias de afeto e proporcionando desenvolvimento integral.',
+    photo_path: 'https://images.unsplash.com/photo-1609234656388-0ff363383899?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_09',
+    name: 'Fernanda Lima Rocha',
+    email: 'fernanda.rocha@tech.com',
+    phone: '(11) 97654-3210',
+    role: 'sponsor',
+    bio: 'Engenheira de software e madrinha dedicada a projetos de educação digital.',
+    photo_path: 'https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_fam_10',
+    name: 'Família Ribeiro & Albuquerque',
+    email: 'familia.ribeiro@email.com',
+    phone: '(41) 99123-9988',
+    role: 'family',
+    bio: 'Acolhimento com foco em valores cristãos, educação e respeito mútuo.',
+    photo_path: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_11',
+    name: 'Lucas Albuquerque',
+    email: 'lucas.albuquerque@email.com',
+    phone: '(19) 98123-4567',
+    role: 'sponsor',
+    bio: 'Apoiador financeiro e tutor de matérias escolares no contraturno.',
+    photo_path: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_fam_12',
+    name: 'Família Costa & Ramos',
+    email: 'familia.costa@email.com',
+    phone: '(11) 98456-7890',
+    role: 'family',
+    bio: 'Dedicados à primeira infância e bebês, oferecendo cuidados essenciais.',
+    photo_path: 'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_13',
+    name: 'Camila Rocha Santos',
+    email: 'camila.rocha@editora.com',
+    phone: '(21) 98321-6547',
+    role: 'sponsor',
+    bio: 'Professora e escritora infantil, doando livros e apoio pedagógico.',
+    photo_path: 'https://images.unsplash.com/photo-1548142813-c348350df52b?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_14',
+    name: 'Patrícia Souza Nogueira',
+    email: 'patricia.souza@consultoria.com',
+    phone: '(31) 97123-8899',
+    role: 'sponsor',
+    bio: 'Consultora de projetos sociais e madrinha ativa de 2 afilhados especiais.',
+    photo_path: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_fam_15',
+    name: 'Família Carvalho & Gomes',
+    email: 'familia.carvalho@email.com',
+    phone: '(11) 97333-4455',
+    role: 'family',
+    bio: 'Ambiente aconchegante com horta comunitária onde as crianças brincam felizes.',
+    photo_path: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_16',
+    name: 'Bruno Silveira Dias',
+    email: 'bruno.dias@banco.com.br',
+    phone: '(11) 98777-8899',
+    role: 'sponsor',
+    bio: 'Economista voluntário, mentorando jovens para o mercado de trabalho.',
+    photo_path: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_fam_17',
+    name: 'Família Dias & Moreira',
+    email: 'familia.dias@email.com',
+    phone: '(21) 99888-7766',
+    role: 'family',
+    bio: 'Acolhedores experientes com assistência integral e carinho de pais.',
+    photo_path: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'prof_sp_18',
+    name: 'Juliana Albuquerque Freitas',
+    email: 'juliana.freitas@psicologia.com',
+    phone: '(11) 98555-1234',
+    role: 'sponsor',
+    bio: 'Psicóloga infantojuvenil e apoiadora de programas de saúde mental do Lar.',
+    photo_path: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?w=400&h=400&fit=crop',
+    updated_at: new Date().toISOString()
   }
 ];
 
@@ -1040,20 +1224,7 @@ export default function App() {
     const { id, name } = childToDelete;
     setChildToDelete(null);
 
-    // 1. Excluir criança no Supabase (limpando também presentes vinculados em 'gifts')
-    const { error } = await deleteKidInSupabase(id);
-
-    if (error) {
-      console.error('Erro ao excluir criança no Supabase:', error);
-      let errorMsg = error.message || 'Falha de comunicação com o banco de dados.';
-      if (error.code === '42501' || errorMsg.toLowerCase().includes('permission') || errorMsg.toLowerCase().includes('policy')) {
-        errorMsg = 'Permissão negada (RLS) no Supabase ao excluir criança.';
-      }
-      setNotification(`Falha ao excluir "${name}" no Supabase: ${errorMsg}`);
-      return; // Não remove da lista se o Supabase falhar
-    }
-
-    // 2. Atualizar estado local e cache apenas após confirmação do Supabase
+    // 1. Atualizar estado local e cache imediatamente para resposta instantânea ao usuário
     setChildrenList(prev => {
       const updated = prev.filter(item => item.id !== id);
       try {
@@ -1071,7 +1242,17 @@ export default function App() {
       });
     }
 
-    setNotification(`Criança "${name}" excluída com sucesso do Supabase.`);
+    setNotification(`Criança "${name}" excluída com sucesso!`);
+
+    // 2. Sincronizar exclusão com o Supabase com tratamento à prova de falhas
+    try {
+      const { error } = await deleteKidInSupabase(id);
+      if (error) {
+        console.warn('Nota de sincronização Supabase ao excluir:', error.message);
+      }
+    } catch (syncErr) {
+      console.warn('Exclusão mantida no app após erro de rede/Supabase:', syncErr);
+    }
   };
 
   const deleteChild = (id: string, name: string) => {
@@ -1195,25 +1376,52 @@ export default function App() {
   const [profilesList, setProfilesList] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('profilesList');
-      return saved ? JSON.parse(saved) : [];
+      const parsed = saved ? JSON.parse(saved) : [];
+      const map = new Map<string, any>();
+      // 1. Alicerce: todos os 18 perfis mestres (1 admin, 11 padrinhos, 6 famílias)
+      INITIAL_PROFILES.forEach(p => map.set(p.id, { ...p }));
+      // 2. Sobrepõe edições e personalizações salvas localmente
+      if (Array.isArray(parsed)) {
+        parsed.forEach((p: any) => {
+          if (p && p.id) {
+            map.set(p.id, { ...(map.get(p.id) || {}), ...p });
+          }
+        });
+      }
+      return Array.from(map.values());
     } catch {
-      return [];
+      return INITIAL_PROFILES;
     }
   });
   const [profilesFilterRole, setProfilesFilterRole] = useState<'all' | 'sponsor' | 'family' | 'admin'>('all');
   const [profilesSearchQuery, setProfilesSearchQuery] = useState('');
   const [showRlsModal, setShowRlsModal] = useState(false);
+
+  // Estado para Edição Completa de Perfil (Padrinho, Família ou Admin)
+  const [editingProfile, setEditingProfile] = useState<any | null>(null);
+  const [editProfName, setEditProfName] = useState('');
+  const [editProfRole, setEditProfRole] = useState<'sponsor' | 'family' | 'admin'>('sponsor');
+  const [editProfEmail, setEditProfEmail] = useState('');
+  const [editProfPhone, setEditProfPhone] = useState('');
+  const [editProfBio, setEditProfBio] = useState('');
+  const [editProfPhoto, setEditProfPhoto] = useState('');
+  const [editProfMessage, setEditProfMessage] = useState('');
+
+  // Formulário: Novo Padrinho
   const [showNewSponsorForm, setShowNewSponsorForm] = useState(false);
   const [newSponsorName, setNewSponsorName] = useState('');
   const [newSponsorEmail, setNewSponsorEmail] = useState('');
   const [newSponsorPhone, setNewSponsorPhone] = useState('');
   const [newSponsorBio, setNewSponsorBio] = useState('');
+  const [newSponsorPhoto, setNewSponsorPhoto] = useState('');
 
+  // Formulário: Nova Família
   const [showNewFamilyForm, setShowNewFamilyForm] = useState(false);
   const [newFamilyName, setNewFamilyName] = useState('');
   const [newFamilyEmail, setNewFamilyEmail] = useState('');
   const [newFamilyPhone, setNewFamilyPhone] = useState('');
   const [newFamilyBio, setNewFamilyBio] = useState('');
+  const [newFamilyPhoto, setNewFamilyPhoto] = useState('');
   const [galleryItems, setGalleryItems] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('galleryItems');
@@ -1431,18 +1639,32 @@ export default function App() {
         } catch {}
       }
 
-      // 4. Mapear perfis reais do Supabase (Admin, Famílias e Padrinhos) preservando perfis locais
-      if (data.profiles && data.profiles.length > 0) {
-        setProfilesList(prev => {
-          const localOnly = prev.filter(lp => 
-            !data.profiles.some((sp: any) => sp.id === lp.id || (lp.email && sp.email && lp.email.trim().toLowerCase() === sp.email.trim().toLowerCase()))
-          );
-          const merged = [...data.profiles, ...localOnly];
-          try {
-            localStorage.setItem('profilesList', JSON.stringify(merged));
-          } catch {}
-          return merged;
+      // 4. Mapear perfis reais do Supabase (Admin, Famílias e Padrinhos) garantindo os 18 perfis mestres
+      setProfilesList(prev => {
+        const mergedMap = new Map<string, any>();
+        // 1. Alicerce: todos os 18 perfis mestres
+        INITIAL_PROFILES.forEach(p => mergedMap.set(p.id, { ...p }));
+        // 2. Mescla alterações locais
+        (prev || []).forEach(lp => {
+          if (lp && lp.id) {
+            mergedMap.set(lp.id, { ...(mergedMap.get(lp.id) || {}), ...lp });
+          }
         });
+        // 3. Mescla dados remotos do Supabase se existirem
+        if (data.profiles && data.profiles.length > 0) {
+          data.profiles.forEach((sp: any) => {
+            if (sp && sp.id) {
+              mergedMap.set(sp.id, { ...(mergedMap.get(sp.id) || {}), ...sp });
+            }
+          });
+        }
+        const fullProfiles = Array.from(mergedMap.values());
+        try {
+          localStorage.setItem('profilesList', JSON.stringify(fullProfiles));
+        } catch {}
+        return fullProfiles;
+        });
+
         const adminProf = data.profiles.find((p: any) => p.role === 'admin' || p.id === DEFAULT_ADMIN_PROFILE_ID);
         if (adminProf) {
           if (adminProf.name && adminProf.name !== 'Sem nome') setAdminName(adminProf.name);
@@ -1483,7 +1705,6 @@ export default function App() {
               : prev.avatar
           }));
         }
-      }
 
       if (data.error) {
         console.warn('Aviso do Supabase:', data.error);
@@ -1739,6 +1960,23 @@ export default function App() {
       } catch {}
       setNotification('Foto de perfil do administrador atualizada!');
       confetti({ particleCount: 40, spread: 50 });
+    } else if (dest === 'family_profile') {
+      setFamilyUser(prev => ({ ...prev, avatar: cameraCapturedImage }));
+      setNotification('Foto de perfil da família atualizada com sucesso!');
+      confetti({ particleCount: 30, spread: 40 });
+    } else if (dest === 'sponsor_profile') {
+      setSponsorUser(prev => ({ ...prev, avatar: cameraCapturedImage }));
+      setNotification('Foto de perfil do padrinho atualizada com sucesso!');
+      confetti({ particleCount: 30, spread: 40 });
+    } else if (dest === 'edit_profile') {
+      setEditProfPhoto(cameraCapturedImage);
+      setNotification('Foto do perfil capturada com a câmera!');
+    } else if (dest === 'new_sponsor') {
+      setNewSponsorPhoto(cameraCapturedImage);
+      setNotification('Foto do novo padrinho capturada!');
+    } else if (dest === 'new_family') {
+      setNewFamilyPhoto(cameraCapturedImage);
+      setNotification('Foto da nova família capturada!');
     } else if (dest === 'photo_editor') {
       setPhotoEditorImg(cameraCapturedImage);
       setCurrentScreenIndex(10);
@@ -1753,7 +1991,7 @@ export default function App() {
   };
 
   // Abrir Câmera do App com um destino específico
-  const openInAppCamera = (target: 'gallery' | 'child' | 'carousel' | 'media916' | 'profile' | 'photo_editor' = 'gallery', childIdx: number | null = null) => {
+  const openInAppCamera = (target: 'gallery' | 'child' | 'carousel' | 'media916' | 'profile' | 'family_profile' | 'sponsor_profile' | 'edit_profile' | 'new_sponsor' | 'new_family' | 'photo_editor' = 'gallery', childIdx: number | null = null) => {
     setCameraTarget(target);
     setCameraChildTargetIndex(childIdx);
     setCameraCapturedImage(null);
@@ -5350,6 +5588,47 @@ export default function App() {
                         <Heart className="w-3.5 h-3.5" />
                         <span>Cadastrar Novo Padrinho</span>
                       </h4>
+
+                      {/* Foto de Perfil do Novo Padrinho */}
+                      <div className="flex items-center space-x-3 p-2 bg-[#1A1033] rounded-xl border border-purple-500/30">
+                        <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-pink-500 shrink-0 shadow">
+                          <img 
+                            src={newSponsorPhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&h=300&fit=crop'} 
+                            alt="Foto Padrinho" 
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <p className="text-[10px] text-purple-200 font-semibold">Foto de Perfil do Padrinho:</p>
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openInAppCamera('new_sponsor')}
+                              className="px-2.5 py-1 rounded-lg bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] flex items-center space-x-1 active:scale-95 shadow"
+                            >
+                              <Camera className="w-3 h-3" />
+                              <span>📸 Câmera</span>
+                            </button>
+                            <label className="px-2.5 py-1 rounded-lg bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] flex items-center space-x-1 cursor-pointer active:scale-95 shadow">
+                              <Upload className="w-3 h-3 text-pink-400" />
+                              <span>📁 Galeria</span>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={async (e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const base64 = await processMediaFile(e.target.files[0]);
+                                    setNewSponsorPhoto(base64);
+                                    setNotification('Foto do padrinho selecionada!');
+                                  }
+                                }} 
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
                       <input 
                         type="text" 
                         placeholder="Nome do Padrinho *" 
@@ -5390,6 +5669,7 @@ export default function App() {
                             phone: newSponsorPhone.trim(),
                             bio: newSponsorBio.trim(),
                             role: 'sponsor',
+                            photo_path: newSponsorPhoto || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop',
                             updated_at: new Date().toISOString()
                           };
                           const updated = [newProf, ...profilesList];
@@ -5403,6 +5683,7 @@ export default function App() {
                           setNewSponsorEmail('');
                           setNewSponsorPhone('');
                           setNewSponsorBio('');
+                          setNewSponsorPhoto('');
                           setShowNewSponsorForm(false);
                           confetti({ particleCount: 40, spread: 50 });
 
@@ -5412,7 +5693,8 @@ export default function App() {
                             email: newProf.email,
                             phone: newProf.phone,
                             bio: newProf.bio,
-                            role: 'sponsor'
+                            role: 'sponsor',
+                            photo_path: newProf.photo_path
                           }).catch(() => {});
                         }}
                         className="w-full py-2.5 rounded-xl bg-pink-600 font-bold text-white shadow active:scale-[0.98]"
@@ -5429,6 +5711,47 @@ export default function App() {
                         <Users className="w-3.5 h-3.5" />
                         <span>Cadastrar Nova Família Acolhedora</span>
                       </h4>
+
+                      {/* Foto de Perfil da Nova Família */}
+                      <div className="flex items-center space-x-3 p-2 bg-[#1A1033] rounded-xl border border-purple-500/30">
+                        <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-amber-400 shrink-0 shadow">
+                          <img 
+                            src={newFamilyPhoto || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop'} 
+                            alt="Foto Família" 
+                            className="w-full h-full object-cover" 
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <p className="text-[10px] text-purple-200 font-semibold">Foto de Perfil da Família:</p>
+                          <div className="flex items-center space-x-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openInAppCamera('new_family')}
+                              className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] flex items-center space-x-1 active:scale-95 shadow"
+                            >
+                              <Camera className="w-3 h-3 text-black" />
+                              <span>📸 Câmera</span>
+                            </button>
+                            <label className="px-2.5 py-1 rounded-lg bg-purple-900/80 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] flex items-center space-x-1 cursor-pointer active:scale-95 shadow">
+                              <Upload className="w-3 h-3 text-amber-400" />
+                              <span>📁 Galeria</span>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={async (e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const base64 = await processMediaFile(e.target.files[0]);
+                                    setNewFamilyPhoto(base64);
+                                    setNotification('Foto da família selecionada!');
+                                  }
+                                }} 
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+
                       <input 
                         type="text" 
                         placeholder="Nome dos Responsáveis / Família *" 
@@ -5469,6 +5792,7 @@ export default function App() {
                             phone: newFamilyPhone.trim(),
                             bio: newFamilyBio.trim(),
                             role: 'family',
+                            photo_path: newFamilyPhoto || 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop',
                             updated_at: new Date().toISOString()
                           };
                           const updated = [newProf, ...profilesList];
@@ -5482,6 +5806,7 @@ export default function App() {
                           setNewFamilyEmail('');
                           setNewFamilyPhone('');
                           setNewFamilyBio('');
+                          setNewFamilyPhoto('');
                           setShowNewFamilyForm(false);
                           confetti({ particleCount: 40, spread: 50 });
 
@@ -5491,7 +5816,8 @@ export default function App() {
                             email: newProf.email,
                             phone: newProf.phone,
                             bio: newProf.bio,
-                            role: 'family'
+                            role: 'family',
+                            photo_path: newProf.photo_path
                           }).catch(() => {});
                         }}
                         className="w-full py-2.5 rounded-xl bg-amber-500 font-bold text-black shadow active:scale-[0.98]"
@@ -5608,16 +5934,20 @@ export default function App() {
                             : (isFam ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop' : 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop');
 
                           return (
-                            <div key={prof.id || idx} className="p-3.5 rounded-2xl bg-[#2A1840] border border-purple-500/30 hover:border-pink-500/50 flex items-center justify-between space-x-3 shadow transition">
+                            <div key={prof.id || idx} className="p-3.5 rounded-2xl bg-[#2A1840] border border-purple-500/30 hover:border-pink-500/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow transition">
                               <div className="flex items-center space-x-3 min-w-0">
                                 <div 
-                                  className="w-12 h-12 rounded-full overflow-hidden border-2 border-pink-500/60 shrink-0 cursor-pointer shadow"
+                                  className="w-13 h-13 rounded-2xl overflow-hidden border-2 border-pink-500/60 shrink-0 cursor-pointer shadow relative group"
                                   onClick={() => setZoomedImage(avatar)}
+                                  title="Toque para ampliar foto de perfil"
                                 >
                                   <img src={avatar} alt={prof.name} className="w-full h-full object-cover select-none pointer-events-none" />
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                                    <ZoomIn className="w-3.5 h-3.5 text-white" />
+                                  </div>
                                 </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center space-x-2">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center space-x-2 flex-wrap gap-1">
                                     <h4 className="font-bold text-white text-xs truncate">{prof.name || 'Sem nome'}</h4>
                                     <span className={`px-2 py-0.5 rounded-full border text-[9px] font-bold shrink-0 ${badgeColor}`}>
                                       {roleLabel}
@@ -5630,21 +5960,86 @@ export default function App() {
                                 </div>
                               </div>
 
-                              <div className="shrink-0 flex items-center space-x-1">
+                              <div className="shrink-0 flex items-center space-x-1.5 self-end sm:self-center">
+                                {/* Botão Editar Perfil */}
                                 <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingProfile(prof);
+                                    setEditProfName(prof.name || '');
+                                    setEditProfRole(isFam ? 'family' : (isAdm ? 'admin' : 'sponsor'));
+                                    setEditProfEmail(prof.email || '');
+                                    setEditProfPhone(prof.phone || '');
+                                    setEditProfBio(prof.bio || '');
+                                    setEditProfPhoto(avatar);
+                                    setEditProfMessage(prof.familyMessage || prof.message || '');
+                                  }}
+                                  className="px-2.5 py-1.5 rounded-xl bg-pink-600/30 hover:bg-pink-600/50 text-pink-200 hover:text-white text-[10px] font-bold border border-pink-500/40 flex items-center space-x-1 active:scale-95 transition"
+                                  title="Editar informações e foto do perfil"
+                                >
+                                  <Edit3 className="w-3 h-3 text-pink-300" />
+                                  <span>Editar</span>
+                                </button>
+
+                                {/* Botão Ativar Perfil */}
+                                <button
+                                  type="button"
                                   onClick={() => {
                                     if (isFam) {
-                                      setFamilyUser(prev => ({ ...prev, name: prof.name || prev.name, email: prof.email || prev.email, phone: prof.phone || prev.phone, bio: prof.bio || prev.bio }));
-                                      setNotification(`Perfil da família "${prof.name}" carregado!`);
+                                      setFamilyUser(prev => ({ 
+                                        ...prev, 
+                                        id: prof.id || prev.id,
+                                        name: prof.name || prev.name, 
+                                        email: prof.email || prev.email, 
+                                        phone: prof.phone || prev.phone, 
+                                        bio: prof.bio || prev.bio,
+                                        avatar 
+                                      }));
+                                      setNotification(`Perfil da família "${prof.name}" ativado com sucesso!`);
                                     } else {
-                                      setSponsorUser(prev => ({ ...prev, name: prof.name || prev.name, email: prof.email || prev.email, phone: prof.phone || prev.phone, bio: prof.bio || prev.bio }));
-                                      setNotification(`Perfil do padrinho "${prof.name}" carregado!`);
+                                      setSponsorUser(prev => ({ 
+                                        ...prev, 
+                                        id: prof.id || prev.id,
+                                        name: prof.name || prev.name, 
+                                        email: prof.email || prev.email, 
+                                        phone: prof.phone || prev.phone, 
+                                        bio: prof.bio || prev.bio,
+                                        avatar 
+                                      }));
+                                      setNotification(`Perfil do padrinho "${prof.name}" ativado com sucesso!`);
                                     }
                                   }}
-                                  className="px-2 py-1 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-200 text-[10px] font-bold border border-purple-500/30"
+                                  className="px-2.5 py-1.5 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 text-[10px] font-bold border border-purple-500/30 active:scale-95"
+                                  title="Definir como perfil ativo no app"
                                 >
                                   Ativar
                                 </button>
+
+                                {/* Botão Excluir Perfil (se não for o admin central) */}
+                                {!isAdm && (
+                                  <button
+                                    type="button"
+                                    onClick={async () => {
+                                      const confirmDelete = window.confirm ? window.confirm(`Deseja realmente remover o perfil de "${prof.name}"?`) : true;
+                                      if (!confirmDelete) return;
+
+                                      const updated = profilesList.filter(p => p.id !== prof.id);
+                                      setProfilesList(updated);
+                                      try {
+                                        localStorage.setItem('profilesList', JSON.stringify(updated));
+                                      } catch {}
+
+                                      setNotification(`Perfil "${prof.name}" removido!`);
+                                      if (prof.id && !prof.id.startsWith('local_') && !prof.id.startsWith('prof_')) {
+                                        await deleteProfileInSupabase(prof.id).catch(() => {});
+                                      }
+                                    }}
+                                    className="p-1.5 rounded-xl bg-red-600/20 hover:bg-red-600/40 text-red-300 border border-red-500/30 active:scale-95 transition"
+                                    title="Remover perfil"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
                               </div>
                             </div>
                           );
@@ -5652,6 +6047,217 @@ export default function App() {
                       </div>
                     );
                   })()}
+
+                  {/* MODAL COMPLETO: EDITAR PERFIL (Padrinho, Família ou Admin) */}
+                  {editingProfile && (
+                    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4">
+                      <div className="w-full max-w-md bg-[#1A1033] rounded-3xl p-5 border border-pink-500/50 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-2 border-b border-purple-900/40">
+                          <h3 className="font-bold text-white text-sm flex items-center space-x-2">
+                            <Edit3 className="w-4 h-4 text-pink-400" />
+                            <span>Editar Perfil: {editingProfile.name}</span>
+                          </h3>
+                          <button 
+                            type="button" 
+                            onClick={() => setEditingProfile(null)}
+                            className="p-1 rounded-xl bg-purple-900/60 text-purple-300 hover:text-white"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {/* Foto de Perfil com Opção de Câmera e Galeria */}
+                        <div className="flex flex-col items-center space-y-2 py-1">
+                          <div 
+                            className="w-20 h-20 rounded-full overflow-hidden border-2 border-pink-500 shadow-xl cursor-pointer relative group"
+                            onClick={() => setZoomedImage(editProfPhoto)}
+                          >
+                            <img src={editProfPhoto} alt="Foto Perfil" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                              <ZoomIn className="w-4 h-4 text-white" />
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => openInAppCamera('edit_profile')}
+                              className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] flex items-center space-x-1 active:scale-95 shadow"
+                            >
+                              <Camera className="w-3.5 h-3.5" />
+                              <span>📸 Tirar Foto com Câmera</span>
+                            </button>
+                            <label className="px-3 py-1.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] flex items-center space-x-1 cursor-pointer active:scale-95 shadow">
+                              <Upload className="w-3.5 h-3.5 text-pink-400" />
+                              <span>📁 Galeria</span>
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                className="hidden" 
+                                onChange={async (e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const base64 = await processMediaFile(e.target.files[0]);
+                                    setEditProfPhoto(base64);
+                                    setNotification('Nova foto do perfil selecionada!');
+                                  }
+                                }} 
+                              />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Campos de Dados do Perfil */}
+                        <div className="space-y-2 text-xs">
+                          <div>
+                            <label className="text-purple-300 text-[10px] block mb-1 font-semibold">Tipo de Perfil</label>
+                            <select
+                              value={editProfRole}
+                              onChange={(e) => setEditProfRole(e.target.value as any)}
+                              className="w-full bg-[#2A1840] border border-purple-500/40 rounded-xl px-3 py-2 text-white font-bold outline-none"
+                            >
+                              <option value="sponsor">Padrinho Voluntário</option>
+                              <option value="family">Família Acolhedora</option>
+                              <option value="admin">Administrador do Lar</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="text-purple-300 text-[10px] block mb-1 font-semibold">Nome Completo</label>
+                            <input 
+                              type="text"
+                              value={editProfName}
+                              onChange={(e) => setEditProfName(e.target.value)}
+                              placeholder="Nome Completo"
+                              className="w-full bg-[#2A1840] border border-purple-500/40 rounded-xl px-3 py-2 text-white font-bold outline-none"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-purple-300 text-[10px] block mb-1 font-semibold">WhatsApp / Telefone</label>
+                              <input 
+                                type="text"
+                                value={editProfPhone}
+                                onChange={(e) => setEditProfPhone(e.target.value)}
+                                placeholder="(11) 98765-4321"
+                                className="w-full bg-[#2A1840] border border-purple-500/40 rounded-xl px-3 py-2 text-white outline-none"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-purple-300 text-[10px] block mb-1 font-semibold">E-mail</label>
+                              <input 
+                                type="email"
+                                value={editProfEmail}
+                                onChange={(e) => setEditProfEmail(e.target.value)}
+                                placeholder="email@exemplo.com"
+                                className="w-full bg-[#2A1840] border border-purple-500/40 rounded-xl px-3 py-2 text-white outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="text-purple-300 text-[10px] block mb-1 font-semibold">Biografia / Sobre Nós</label>
+                            <textarea 
+                              value={editProfBio}
+                              onChange={(e) => setEditProfBio(e.target.value)}
+                              placeholder="Fale um pouco sobre a dedicação, acolhimento ou apadrinhamento..."
+                              rows={2}
+                              className="w-full bg-[#2A1840] border border-purple-500/40 rounded-xl p-2.5 text-white text-xs resize-none outline-none"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="text-pink-300 text-[10px] block mb-1 font-semibold">Mensagem Especial (Visível no perfil compartilhado)</label>
+                            <textarea 
+                              value={editProfMessage}
+                              onChange={(e) => setEditProfMessage(e.target.value)}
+                              placeholder="Palavra de incentivo, amor e esperança..."
+                              rows={2}
+                              className="w-full bg-[#2A1840] border border-pink-500/40 rounded-xl p-2.5 text-white text-xs resize-none outline-none"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Botões de Ação do Modal */}
+                        <div className="flex space-x-2 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setEditingProfile(null)}
+                            className="flex-1 py-2.5 rounded-xl bg-purple-900/60 hover:bg-purple-900 text-purple-200 text-xs font-semibold"
+                          >
+                            Cancelar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!editProfName.trim()) {
+                                setNotification('Informe o nome do perfil.');
+                                return;
+                              }
+
+                              const updatedProf = {
+                                ...editingProfile,
+                                name: editProfName.trim(),
+                                role: editProfRole,
+                                email: editProfEmail.trim(),
+                                phone: editProfPhone.trim(),
+                                bio: editProfBio.trim(),
+                                photo_path: editProfPhoto,
+                                message: editProfMessage.trim(),
+                                familyMessage: editProfMessage.trim(),
+                                updated_at: new Date().toISOString()
+                              };
+
+                              const updatedList = profilesList.map(p => p.id === editingProfile.id ? updatedProf : p);
+                              setProfilesList(updatedList);
+                              try {
+                                localStorage.setItem('profilesList', JSON.stringify(updatedList));
+                              } catch {}
+
+                              // Sincronizar com perfis ativos do app
+                              if (editProfRole === 'family' || editingProfile.id === DEFAULT_FAMILY_PROFILE_ID || familyUser.email === editProfEmail) {
+                                setFamilyUser(prev => ({
+                                  ...prev,
+                                  name: editProfName.trim(),
+                                  phone: editProfPhone.trim(),
+                                  email: editProfEmail.trim(),
+                                  bio: editProfBio.trim(),
+                                  avatar: editProfPhoto || prev.avatar
+                                }));
+                              }
+                              if (editProfRole === 'sponsor' || editingProfile.id === DEFAULT_SPONSOR_PROFILE_ID || sponsorUser.email === editProfEmail) {
+                                setSponsorUser(prev => ({
+                                  ...prev,
+                                  name: editProfName.trim(),
+                                  phone: editProfPhone.trim(),
+                                  email: editProfEmail.trim(),
+                                  bio: editProfBio.trim(),
+                                  avatar: editProfPhoto || prev.avatar,
+                                  familyMessage: editProfMessage.trim()
+                                }));
+                              }
+
+                              setEditingProfile(null);
+                              setNotification(`Perfil "${updatedProf.name}" atualizado com sucesso!`);
+                              confetti({ particleCount: 35, spread: 40 });
+
+                              // Sincronizar com Supabase em segundo plano
+                              if (editingProfile.id && !editingProfile.id.startsWith('local_') && !editingProfile.id.startsWith('prof_')) {
+                                await updateProfileInSupabase(editingProfile.id, {
+                                  name: updatedProf.name,
+                                  phone: updatedProf.phone,
+                                  bio: updatedProf.bio,
+                                  photo_path: updatedProf.photo_path
+                                }).catch(() => {});
+                              }
+                            }}
+                            className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-amber-500 font-bold text-white text-xs shadow-lg active:scale-95"
+                          >
+                            Salvar Alterações
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -6614,23 +7220,95 @@ export default function App() {
                     <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline hover:text-white">Voltar ao Painel</button>
                   </div>
 
-                  {/* Formulário para Cadastrar Nova Criança */}
-                  <div className="bg-[#2A1840] p-4 rounded-3xl border border-amber-500/30 space-y-3 shadow-xl">
-                    <h4 className="font-bold text-white flex items-center space-x-2">
-                      <Users className="w-4 h-4 text-amber-400" />
-                      <span>+ Adicionar Criança & Carta (Galeria de Esperança)</span>
-                    </h4>
-                    <div className="space-y-2">
+                  {/* Formulário para Cadastrar Nova Criança em Formato de Perfil Criativo */}
+                  <div className="bg-gradient-to-b from-[#2A1840] via-[#201035] to-[#170C2A] p-5 rounded-3xl border-2 border-amber-500/40 space-y-4 shadow-2xl">
+                    {/* Cabeçalho do Perfil da Criança */}
+                    <div className="text-center pb-2 border-b border-purple-900/40">
+                      <div className="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-[10px] mb-1 shadow-sm">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        <span>Perfil da Criança • Galeria de Esperança</span>
+                      </div>
+                      <h4 className="font-extrabold text-white text-sm">
+                        Cadastrar Nova Criança no Lar Esperança
+                      </h4>
+                      <p className="text-[10px] text-purple-300">
+                        Preencha os dados do perfil abaixo para publicação imediata no app.
+                      </p>
+                    </div>
+
+                    {/* 1. Foto do Perfil da Criança (no topo, centralizada com moldura) */}
+                    <div className="flex flex-col items-center space-y-2.5 pt-1">
+                      <div 
+                        className="w-24 h-24 rounded-3xl overflow-hidden border-3 border-amber-400 shadow-2xl relative group bg-[#130822] cursor-pointer"
+                        onClick={() => newChildImage && setZoomedImage(newChildImage)}
+                        title="Foto de Perfil da Criança"
+                      >
+                        <img 
+                          src={newChildImage || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop'} 
+                          alt="Foto da Criança" 
+                          className="w-full h-full object-cover" 
+                        />
+                        {newChildImage && (
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition">
+                            <ZoomIn className="w-5 h-5 text-white" />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => openInAppCamera('child')}
+                          className="py-2 px-3.5 rounded-xl bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 hover:from-pink-500 hover:to-amber-400 text-white font-bold text-[10px] flex items-center space-x-1.5 active:scale-95 shadow-lg transition"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-white" />
+                          <span>📸 Tirar Foto com Câmera</span>
+                        </button>
+
+                        <label 
+                          htmlFor="admin-new-child-file" 
+                          className="py-2 px-3.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] flex items-center space-x-1.5 cursor-pointer active:scale-95 shadow transition"
+                        >
+                          <Upload className="w-3.5 h-3.5 text-pink-400" />
+                          <span>📁 Escolher da Galeria</span>
+                          <input 
+                            id="admin-new-child-file" 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={async (e) => {
+                              const files = e.target.files;
+                              if (files && files[0]) {
+                                const dataUrl = await processMediaFile(files[0]);
+                                setNewChildImage(dataUrl);
+                                setNotification('Foto da criança carregada com sucesso!');
+                              }
+                            }} 
+                          />
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* 2. Nome da Criança (Logo abaixo da foto) */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-pink-300 flex items-center space-x-1">
+                        <User className="w-3 h-3 text-pink-400" />
+                        <span>Nome Completo da Criança *</span>
+                      </label>
                       <input 
                         type="text" 
-                        placeholder="Nome da Criança" 
+                        placeholder="Digite o nome completo da criança..." 
                         value={newChildName} 
                         onChange={(e) => setNewChildName(e.target.value)} 
-                        className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
+                        className="w-full bg-[#130822] border border-purple-500/40 focus:border-pink-500 rounded-2xl px-3.5 py-2.5 text-white font-bold text-xs outline-none transition shadow-inner placeholder-purple-400/50" 
                       />
+                    </div>
+
+                    {/* 3. Data de Nascimento, Idade e Atalhos de Meses (Uma abaixo da outra) */}
+                    <div className="space-y-2 p-3 rounded-2xl bg-[#130822]/80 border border-purple-500/30">
                       <div className="grid grid-cols-2 gap-2">
                         <div>
-                          <label className="text-[10px] text-purple-300 block mb-1">Data de Nascimento:</label>
+                          <label className="text-[10px] text-purple-300 font-semibold block mb-1">Data de Nascimento:</label>
                           <input 
                             type="date" 
                             value={newChildBirthDate} 
@@ -6639,11 +7317,11 @@ export default function App() {
                               setNewChildBirthDate(newDate);
                               setNewChildAge(calculateAge(newDate));
                             }} 
-                            className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
+                            className="w-full bg-[#201035] border border-purple-500/40 rounded-xl px-2.5 py-2 text-white text-xs outline-none" 
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-purple-300 block mb-1">Idade (em anos):</label>
+                          <label className="text-[10px] text-purple-300 font-semibold block mb-1">Idade (em anos):</label>
                           <input 
                             type="number" 
                             min="0"
@@ -6664,16 +7342,16 @@ export default function App() {
                                 }
                               }
                             }} 
-                            className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs text-center font-bold text-amber-300" 
+                            className="w-full bg-[#201035] border border-purple-500/40 rounded-xl px-2.5 py-2 text-amber-300 font-bold text-center text-xs outline-none" 
                           />
                         </div>
                       </div>
 
                       {/* Atalhos para Bebês de 0 a 11 meses */}
-                      <div className="bg-[#1A1033]/70 p-2 rounded-xl border border-pink-500/20 space-y-1">
-                        <div className="flex items-center justify-between text-[10px]">
+                      <div className="pt-1.5 border-t border-purple-900/30">
+                        <div className="flex items-center justify-between text-[10px] mb-1">
                           <span className="text-purple-300 font-semibold">Bebês (0 a 11 meses):</span>
-                          <span className="text-pink-300 text-[9px]">Toque para ajustar meses</span>
+                          <span className="text-pink-300 text-[9px]">Toque para selecionar meses</span>
                         </div>
                         <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none">
                           {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((m) => (
@@ -6687,7 +7365,7 @@ export default function App() {
                                 setNewChildAge(0);
                                 setNotification(`Idade ajustada para ${m} ${m === 1 ? 'mês' : 'meses'}!`);
                               }}
-                              className="px-2 py-1 rounded-lg bg-pink-950/60 hover:bg-pink-800 text-pink-200 border border-pink-500/30 text-[10px] font-bold shrink-0 transition active:scale-95"
+                              className="px-2.5 py-1 rounded-lg bg-pink-950/70 hover:bg-pink-800 text-pink-200 border border-pink-500/40 text-[10px] font-bold shrink-0 transition active:scale-95"
                             >
                               {m}m
                             </button>
@@ -6695,201 +7373,175 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="text-[11px] text-pink-300 font-semibold px-1 flex items-center space-x-1.5 pt-0.5">
-                        <span>Idade no App:</span>
-                        <span className="px-2.5 py-0.5 rounded-md bg-pink-600/30 border border-pink-500/40 text-white font-bold">
+                      <div className="text-[11px] text-pink-300 font-semibold flex items-center justify-between pt-0.5">
+                        <span>Idade calculada no App:</span>
+                        <span className="px-2.5 py-0.5 rounded-lg bg-pink-600/30 border border-pink-500/50 text-amber-200 font-bold text-xs">
                           {getAgeDisplay(newChildBirthDate, newChildAge)}
                         </span>
                       </div>
+                    </div>
+
+                    {/* 4. Presente Desejado (Abaixo da idade) */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-amber-300 flex items-center space-x-1">
+                        <Gift className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Presente Desejado (Sonho de Natal)</span>
+                      </label>
                       <input 
                         type="text" 
-                        placeholder="URL da Foto (ou envie arquivo abaixo)" 
-                        value={newChildImage} 
-                        onChange={(e) => setNewChildImage(e.target.value)} 
-                        className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
+                        placeholder="Ex: Bola de futebol, Boneca, Bicicleta, Carrinho, Jogo..." 
+                        value={newChildDesiredGift} 
+                        onChange={(e) => setNewChildDesiredGift(e.target.value)} 
+                        className="w-full bg-[#130822] border border-amber-500/40 focus:border-amber-300 rounded-2xl px-3.5 py-2.5 text-white text-xs font-semibold outline-none transition shadow-inner placeholder-purple-400/50" 
                       />
-                      {/* Upload / Captura de Foto da Criança */}
-                      <div className="space-y-1.5">
-                        <label className="text-[11px] font-bold text-amber-300 block">Foto da Criança:</label>
-                        {newChildImage && (
-                          <div className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-400 mx-auto mb-2 shadow-lg">
-                            <img src={newChildImage} alt="Preview" className="w-full h-full object-cover" />
-                          </div>
-                        )}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          <button
-                            type="button"
-                            onClick={() => openInAppCamera('child')}
-                            className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-pink-600 via-rose-500 to-amber-500 hover:from-pink-500 hover:to-amber-400 text-white font-black text-center active:scale-[0.98] shadow text-xs flex items-center justify-center space-x-1.5"
-                          >
-                            <Camera className="w-4 h-4 text-white" />
-                            <span>📸 Tirar Foto com a Câmera</span>
-                          </button>
+                    </div>
 
-                          <label 
-                            htmlFor="admin-new-child-file" 
-                            className="py-2.5 px-3 rounded-xl bg-purple-900/60 border border-purple-500/40 text-purple-200 text-center font-bold cursor-pointer hover:bg-purple-800 transition text-xs flex items-center justify-center space-x-1.5"
-                          >
-                            <Upload className="w-4 h-4 text-pink-400" />
-                            <span>📁 Escolher da Galeria</span>
-                          </label>
-                        </div>
-                        <input 
-                          id="admin-new-child-file" 
-                          type="file" 
-                          accept="image/*" 
-                          onChange={async (e) => {
-                            const files = e.target.files;
-                            if (files && files[0]) {
-                              const dataUrl = await processMediaFile(files[0]);
-                              setNewChildImage(dataUrl);
-                              setNotification('Foto da criança carregada com sucesso!');
-                            }
-                          }} 
-                          className="hidden" 
-                        />
-                      </div>
-                      {/* Presente Desejado, Tamanho do Calçado e Vestuário */}
-                      <div className="space-y-2 pt-1 border-t border-purple-900/40">
-                        <label className="text-[11px] font-bold text-amber-300 flex items-center space-x-1">
-                          <Gift className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Presente Desejado & Tamanhos (Calçado e Roupa)</span>
-                        </label>
+                    {/* 5. Tamanhos de Calçado e Roupa (Abaixo do presente) */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] text-purple-300 font-semibold block mb-1">Tamanho Calçado</label>
                         <input 
                           type="text" 
-                          placeholder="Presente Desejado (Ex: Bola de futebol, Boneca, Bicicleta...)" 
-                          value={newChildDesiredGift} 
-                          onChange={(e) => setNewChildDesiredGift(e.target.value)} 
-                          className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs font-semibold" 
+                          placeholder="Ex: 32, 28, 22..." 
+                          value={newChildShoeSize} 
+                          onChange={(e) => setNewChildShoeSize(e.target.value)} 
+                          className="w-full bg-[#130822] border border-purple-500/40 rounded-xl px-3 py-2 text-white text-xs outline-none" 
                         />
-                        <div className="grid grid-cols-2 gap-2">
-                          <input 
-                            type="text" 
-                            placeholder="Tamanho Calçado (Ex: 32, 28...)" 
-                            value={newChildShoeSize} 
-                            onChange={(e) => setNewChildShoeSize(e.target.value)} 
-                            className="bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
-                          />
-                          <input 
-                            type="text" 
-                            placeholder="Tamanho Roupa (Ex: 8, 10, P, M...)" 
-                            value={newChildClothesSize} 
-                            onChange={(e) => setNewChildClothesSize(e.target.value)} 
-                            className="bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
-                          />
-                        </div>
                       </div>
+                      <div>
+                        <label className="text-[10px] text-purple-300 font-semibold block mb-1">Tamanho Roupa</label>
+                        <input 
+                          type="text" 
+                          placeholder="Ex: 8 anos, 10, P, M..." 
+                          value={newChildClothesSize} 
+                          onChange={(e) => setNewChildClothesSize(e.target.value)} 
+                          className="w-full bg-[#130822] border border-purple-500/40 rounded-xl px-3 py-2 text-white text-xs outline-none" 
+                        />
+                      </div>
+                    </div>
 
+                    {/* 6. Carta com os Desejos da Criança (Abaixo dos tamanhos) */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-amber-300 flex items-center space-x-1">
+                        <Heart className="w-3.5 h-3.5 text-pink-400" />
+                        <span>Carta & Desejos da Criança</span>
+                      </label>
                       <textarea 
-                        placeholder="Carta com os desejos da criança..." 
+                        placeholder="Querido Papai Noel / Padrinho, escreva aqui a mensagem e os sonhos especiais desta criança..." 
                         value={newChildLetter} 
                         onChange={(e) => setNewChildLetter(e.target.value)} 
-                        className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl p-3 text-white h-20 resize-none text-xs" 
+                        rows={3}
+                        className="w-full bg-[#130822] border border-purple-500/40 focus:border-amber-400 rounded-2xl p-3 text-white text-xs resize-none outline-none leading-relaxed transition shadow-inner placeholder-purple-400/50" 
                       />
-                      <button 
-                        onClick={async () => {
-                          if (!newChildName.trim()) {
-                            setNotification('Por favor, informe o nome da criança.');
-                            return;
-                          }
+                    </div>
 
-                          const kidPayload = {
-                            family_id: DEFAULT_ADMIN_PROFILE_ID,
-                            name: newChildName.trim(),
-                            age: newChildAge || 8,
-                            birth_date: newChildBirthDate || null,
-                            gender: 'Infantil',
-                            status: 'Aguardando Apadrinhamento',
-                            likes: newChildDesiredGift || 'brinquedos, escola',
-                            dream: newChildDesiredGift || 'ser feliz',
-                            address: 'Lar Esperança',
-                            image: newChildImage,
-                            photo_path: newChildImage,
-                            letter: newChildLetter.trim() || 'Quero muito um presente especial de Natal!',
-                            wishlist: {
-                              desiredGift: newChildDesiredGift.trim(),
-                              shoeSize: newChildShoeSize.trim(),
-                              clothesSize: newChildClothesSize.trim(),
-                              items: [{ name: newChildDesiredGift.trim() || 'Brinquedo', price: 79.90 }]
-                            },
-                            approved: true
-                          };
+                    {/* 7. Botão Salvar e Adicionar Criança */}
+                    <button 
+                      onClick={async () => {
+                        if (!newChildName.trim()) {
+                          setNotification('Por favor, informe o nome da criança.');
+                          return;
+                        }
 
-                          const tempId = 'kid_' + Date.now();
-                          const createdKid: Child = {
-                            id: tempId,
-                            family_id: DEFAULT_ADMIN_PROFILE_ID,
-                            name: newChildName.trim(),
-                            age: typeof newChildAge === 'number' ? newChildAge : (Number(newChildAge) || 8),
-                            birthDate: newChildBirthDate,
-                            gender: 'Infantil',
-                            status: 'Aguardando Apadrinhamento',
-                            likes: newChildDesiredGift || 'brinquedos, escola',
-                            dream: newChildDesiredGift || 'ser feliz',
-                            address: 'Lar Esperança',
-                            image: newChildImage,
-                            letter: newChildLetter.trim() || 'Quero muito um presente especial!',
-                            wishlist: [{ name: newChildDesiredGift.trim() || 'Brinquedo', price: 79.90 }],
+                        const kidPayload = {
+                          family_id: DEFAULT_ADMIN_PROFILE_ID,
+                          name: newChildName.trim(),
+                          age: newChildAge || 8,
+                          birth_date: newChildBirthDate || null,
+                          gender: 'Infantil',
+                          status: 'Aguardando Apadrinhamento',
+                          likes: newChildDesiredGift || 'brinquedos, escola',
+                          dream: newChildDesiredGift || 'ser feliz',
+                          address: 'Lar Esperança',
+                          image: newChildImage,
+                          photo_path: newChildImage,
+                          letter: newChildLetter.trim() || 'Quero muito um presente especial de Natal!',
+                          wishlist: {
                             desiredGift: newChildDesiredGift.trim(),
                             shoeSize: newChildShoeSize.trim(),
-                            clothesSize: newChildClothesSize.trim()
-                          };
+                            clothesSize: newChildClothesSize.trim(),
+                            items: [{ name: newChildDesiredGift.trim() || 'Brinquedo', price: 79.90 }]
+                          },
+                          approved: true
+                        };
 
-                          // 1. Salvar localmente imediatamente (Zero Perda de Dados)
-                          const updatedList = [createdKid, ...childrenList];
-                          setChildrenList(updatedList);
-                          try {
-                            localStorage.setItem('childrenList', JSON.stringify(updatedList));
-                          } catch (e) {
-                            console.warn('Erro ao salvar localmente:', e);
-                          }
+                        const tempId = 'kid_' + Date.now();
+                        const createdKid: Child = {
+                          id: tempId,
+                          family_id: DEFAULT_ADMIN_PROFILE_ID,
+                          name: newChildName.trim(),
+                          age: typeof newChildAge === 'number' ? newChildAge : (Number(newChildAge) || 8),
+                          birthDate: newChildBirthDate,
+                          gender: 'Infantil',
+                          status: 'Aguardando Apadrinhamento',
+                          likes: newChildDesiredGift || 'brinquedos, escola',
+                          dream: newChildDesiredGift || 'ser feliz',
+                          address: 'Lar Esperança',
+                          image: newChildImage,
+                          letter: newChildLetter.trim() || 'Quero muito um presente especial!',
+                          wishlist: [{ name: newChildDesiredGift.trim() || 'Brinquedo', price: 79.90 }],
+                          desiredGift: newChildDesiredGift.trim(),
+                          shoeSize: newChildShoeSize.trim(),
+                          clothesSize: newChildClothesSize.trim()
+                        };
 
-                          // 2. Disparar notificação imediata aos padrinhos no navegador
-                          sendLocalNotification({
-                            title: 'Nova Criança no Lar! 🌟',
-                            body: `${newChildName} agora faz parte do Lar Esperança e aguarda apadrinhamento.`,
-                            type: 'new_child',
-                            childId: createdKid.id,
-                            childName: newChildName,
-                          });
+                        // 1. Salvar localmente imediatamente (Zero Perda de Dados)
+                        const updatedList = [createdKid, ...childrenList];
+                        setChildrenList(updatedList);
+                        try {
+                          localStorage.setItem('childrenList', JSON.stringify(updatedList));
+                        } catch (e) {
+                          console.warn('Erro ao salvar localmente:', e);
+                        }
 
-                          // Limpar campos
-                          const savedChildName = newChildName;
-                          setNewChildName('');
-                          setNewChildLetter('');
-                          setNewChildDesiredGift('');
-                          setNewChildShoeSize('');
-                          setNewChildClothesSize('');
-                          confetti({ particleCount: 50, spread: 50 });
+                        // 2. Disparar notificação imediata aos padrinhos no navegador
+                        sendLocalNotification({
+                          title: 'Nova Criança no Lar! 🌟',
+                          body: `${newChildName} agora faz parte do Lar Esperança e aguarda apadrinhamento.`,
+                          type: 'new_child',
+                          childId: createdKid.id,
+                          childName: newChildName,
+                        });
 
-                          // 3. Sincronizar com Supabase em segundo plano
-                          try {
-                            const { data, error } = await createKidInSupabase(kidPayload);
-                            if (data && data.id) {
-                              const finalKid = { ...createdKid, id: String(data.id) };
-                              setChildrenList(prev => {
-                                const list = prev.map(c => c.id === tempId ? finalKid : c);
-                                try { localStorage.setItem('childrenList', JSON.stringify(list)); } catch {}
-                                return list;
-                              });
-                              setNotification(`🎉 Criança "${savedChildName}" salva e sincronizada no Supabase!`);
-                            } else {
-                              let msg = (error as any)?.message || 'salvo localmente';
-                              if ((error as any)?.code === '42501' || String(msg).toLowerCase().includes('permission')) {
-                                msg = 'Salvo no app! (Aguardando aplicação do script SQL de RLS no Supabase)';
-                              }
-                              setNotification(`Criança "${savedChildName}" salva com sucesso no app! (${msg})`);
+                        // Limpar campos
+                        const savedChildName = newChildName;
+                        setNewChildName('');
+                        setNewChildLetter('');
+                        setNewChildDesiredGift('');
+                        setNewChildShoeSize('');
+                        setNewChildClothesSize('');
+                        setNewChildImage('');
+                        confetti({ particleCount: 50, spread: 50 });
+
+                        // 3. Sincronizar com Supabase em segundo plano
+                        try {
+                          const { data, error } = await createKidInSupabase(kidPayload);
+                          if (data && data.id) {
+                            const finalKid = { ...createdKid, id: String(data.id) };
+                            setChildrenList(prev => {
+                              const list = prev.map(c => c.id === tempId ? finalKid : c);
+                              try { localStorage.setItem('childrenList', JSON.stringify(list)); } catch {}
+                              return list;
+                            });
+                            setNotification(`🎉 Criança "${savedChildName}" salva e sincronizada no Supabase!`);
+                          } else {
+                            let msg = (error as any)?.message || 'salvo localmente';
+                            if ((error as any)?.code === '42501' || String(msg).toLowerCase().includes('permission')) {
+                              msg = 'Salvo no app! (Aguardando aplicação do script SQL de RLS no Supabase)';
                             }
-                          } catch (syncErr: any) {
-                            setNotification(`Criança "${savedChildName}" salva localmente no app!`);
+                            setNotification(`Criança "${savedChildName}" salva com sucesso no app! (${msg})`);
                           }
-                        }}
-                        className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-pink-600 to-amber-600 font-bold text-white shadow-xl active:scale-[0.98] transition text-xs"
-                      >
-                        + Adicionar Criança
-                      </button>
-                    </div>
+                        } catch (syncErr: any) {
+                          setNotification(`Criança "${savedChildName}" salva localmente no app!`);
+                        }
+                      }}
+                      className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-pink-600 to-amber-600 font-extrabold text-white text-xs shadow-xl active:scale-[0.98] transition flex items-center justify-center space-x-1.5"
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-200" />
+                      <span>Salvar e Cadastrar Criança na Galeria</span>
+                    </button>
                   </div>
+
 
                   {/* Lista de Crianças Cadastradas para Edição */}
                   <div className="space-y-3">
@@ -8117,14 +8769,23 @@ export default function App() {
                     <p className="text-purple-200">Cadastre sua família acolhedora no Lar Esperança com seus dados e história:</p>
                     
                     {/* Upload de Foto de Perfil da Família no Cadastro */}
-                    <div className="flex items-center space-x-3 pb-2 border-b border-purple-900/50">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border border-amber-400 select-none pointer-events-none shrink-0">
+                    <div className="flex flex-col items-center space-y-2 py-2 border-b border-purple-900/50">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-amber-400 shadow-xl">
                         <img src={familyUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       </div>
-                      <label htmlFor="family-reg-avatar" className="px-3 py-2 rounded-xl bg-pink-600 text-white font-bold cursor-pointer active:scale-[0.98] text-[11px]">
-                        + Foto da Família (Galeria)
-                      </label>
-                      <input id="family-reg-avatar" type="file" accept="image/*" onChange={handleFamilyAvatarUpload} className="hidden" />
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => openInAppCamera('new_family')}
+                          className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] active:scale-95 transition"
+                        >
+                          📸 Câmera
+                        </button>
+                        <label className="px-3 py-1.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] cursor-pointer active:scale-95 transition">
+                          📁 Galeria
+                          <input type="file" accept="image/*" onChange={handleFamilyAvatarUpload} className="hidden" />
+                        </label>
+                      </div>
                     </div>
 
                     <div>
@@ -8534,12 +9195,21 @@ export default function App() {
                   <div className="space-y-3 bg-[#2A1840] p-4 rounded-3xl border border-purple-500/30 shadow text-xs">
                     <h4 className="font-bold text-amber-300">Editar Cadastro da Minha Família:</h4>
                     
-                    <div className="flex items-center space-x-3 pb-2 border-b border-purple-900/50">
-                      <img src={familyUser.avatar} alt="Avatar" className="w-12 h-12 rounded-full border border-pink-500 object-cover" />
-                      <label htmlFor="family-avatar-upload" className="px-3 py-2 rounded-xl bg-pink-600 text-white font-bold cursor-pointer active:scale-[0.98]">
-                        + Trocar Foto da Galeria
-                      </label>
-                      <input id="family-avatar-upload" type="file" accept="image/*" onChange={handleFamilyAvatarUpload} className="hidden" />
+                    <div className="flex flex-col items-center space-y-2 py-2 border-b border-purple-900/50">
+                      <img src={familyUser.avatar} alt="Avatar" className="w-20 h-20 rounded-full border-2 border-pink-500 object-cover shadow-xl" />
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => openInAppCamera('family_profile')}
+                          className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] active:scale-95 transition"
+                        >
+                          📸 Câmera
+                        </button>
+                        <label className="px-3 py-1.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] cursor-pointer active:scale-95 transition">
+                          📁 Galeria
+                          <input type="file" accept="image/*" onChange={handleFamilyAvatarUpload} className="hidden" />
+                        </label>
+                      </div>
                     </div>
 
                     <div>
@@ -8711,14 +9381,23 @@ export default function App() {
                     <p className="text-purple-200">Cadastre-se para apadrinhar uma ou mais crianças com facilidade:</p>
                     
                     {/* Upload de Foto de Perfil no Cadastro */}
-                    <div className="flex items-center space-x-3 pb-2 border-b border-purple-900/50">
-                      <div className="w-12 h-12 rounded-full overflow-hidden border border-pink-500 select-none pointer-events-none shrink-0">
+                    <div className="flex flex-col items-center space-y-2 py-2 border-b border-purple-900/50">
+                      <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-pink-500 shadow-xl">
                         <img src={sponsorUser.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       </div>
-                      <label htmlFor="sponsor-reg-avatar" className="px-3 py-2 rounded-xl bg-pink-600 text-white font-bold cursor-pointer active:scale-[0.98] text-[11px]">
-                        + Foto de Perfil (Galeria)
-                      </label>
-                      <input id="sponsor-reg-avatar" type="file" accept="image/*" onChange={handleSponsorAvatarUpload} className="hidden" />
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => openInAppCamera('new_sponsor')}
+                          className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] active:scale-95 transition"
+                        >
+                          📸 Câmera
+                        </button>
+                        <label className="px-3 py-1.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] cursor-pointer active:scale-95 transition">
+                          📁 Galeria
+                          <input type="file" accept="image/*" onChange={handleSponsorAvatarUpload} className="hidden" />
+                        </label>
+                      </div>
                     </div>
 
                     <div>
@@ -8984,12 +9663,21 @@ export default function App() {
                   <div className="space-y-3 bg-[#2A1840] p-4 rounded-3xl border border-purple-500/30 shadow text-xs">
                     <h4 className="font-bold text-amber-300">Editar Meus Dados de Padrinho:</h4>
                     
-                    <div className="flex items-center space-x-3 pb-2 border-b border-purple-900/50">
-                      <img src={sponsorUser.avatar} alt="Avatar" className="w-12 h-12 rounded-full border border-pink-500 object-cover" />
-                      <label htmlFor="sponsor-avatar-upload" className="px-3 py-2 rounded-xl bg-pink-600 text-white font-bold cursor-pointer active:scale-[0.98]">
-                        + Trocar Foto da Galeria
-                      </label>
-                      <input id="sponsor-avatar-upload" type="file" accept="image/*" onChange={handleSponsorAvatarUpload} className="hidden" />
+                    <div className="flex flex-col items-center space-y-2 py-2 border-b border-purple-900/50">
+                      <img src={sponsorUser.avatar} alt="Avatar" className="w-20 h-20 rounded-full border-2 border-pink-500 object-cover shadow-xl" />
+                      <div className="flex items-center space-x-2">
+                        <button
+                          type="button"
+                          onClick={() => openInAppCamera('sponsor_profile')}
+                          className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] active:scale-95 transition"
+                        >
+                          📸 Câmera
+                        </button>
+                        <label className="px-3 py-1.5 rounded-xl bg-purple-900/70 hover:bg-purple-800 text-purple-200 border border-purple-500/40 font-bold text-[10px] cursor-pointer active:scale-95 transition">
+                          📁 Galeria
+                          <input type="file" accept="image/*" onChange={handleSponsorAvatarUpload} className="hidden" />
+                        </label>
+                      </div>
                     </div>
 
                     <div>

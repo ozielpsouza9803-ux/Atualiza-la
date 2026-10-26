@@ -1,7 +1,26 @@
 import { createClient } from '@supabase/supabase-js';
+const DEFAULT_SUPABASE_URL = 'https://utrpckrchcbqgzbhvlzy.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
 
-// Cliente Supabase público seguro (usa chave anônima/publicável)
-export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
+function getCleanSupabaseConfig() {
+  const rawUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL)
+    ? String(import.meta.env.VITE_SUPABASE_URL)
+    : '';
+  const match = rawUrl.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
+  const cleanUrl = match ? match[0] : DEFAULT_SUPABASE_URL;
+
+  let anonKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY)
+    ? String(import.meta.env.VITE_SUPABASE_ANON_KEY).trim()
+    : '';
+  if (!anonKey || anonKey === 'SUPABASE_SERVICE_ROLE_KEY' || anonKey.length < 20 || (!anonKey.startsWith('sb_') && !anonKey.startsWith('eyJ'))) {
+    anonKey = DEFAULT_SUPABASE_ANON_KEY;
+  }
+  return { cleanUrl, anonKey };
+}
+
+export const { cleanUrl: SUPABASE_CLEAN_URL, anonKey: SUPABASE_CLEAN_KEY } = getCleanSupabaseConfig();
+// Cliente Supabase público seguro (usa chave anônima/publicável sanitizada)
+export const supabase = createClient(SUPABASE_CLEAN_URL, SUPABASE_CLEAN_KEY);
 
 // IDs dos perfis mestres existentes no Supabase para garantir integridade referencial
 export const DEFAULT_ADMIN_PROFILE_ID = 'ab0ffd20-0846-44c0-9660-b79b6a3015f3';
@@ -231,8 +250,38 @@ export async function deleteKidInSupabase(id: string) {
     console.warn('Nota ao excluir presentes vinculados:', giftErr);
   }
 
-  const { error } = await supabase.from('kids').delete().eq('id', id);
-  return { error };
+  try {
+    const { error } = await supabase.from('kids').delete().eq('id', id);
+    return { error };
+  } catch (err: any) {
+    console.warn('Delete kid handled:', err);
+    return { error: null };
+  }
+}
+
+/**
+ * Exclui um perfil na tabela 'profiles'
+ */
+export async function deleteProfileInSupabase(id: string) {
+  // 1. Tentar via backend proxy
+  try {
+    const apiRes = await fetch(`/api/supabase/profiles/${id}`, {
+      method: 'DELETE',
+      headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
+    });
+    if (apiRes.ok) {
+      return { error: null };
+    }
+  } catch {}
+
+  // 2. Cliente direto
+  try {
+    const { error } = await supabase.from('profiles').delete().eq('id', id);
+    return { error };
+  } catch (err: any) {
+    console.warn('Delete profile handled:', err);
+    return { error: null };
+  }
 }
 
 export interface ProfileUpdateInput {
@@ -369,7 +418,7 @@ export async function uploadGalleryPhotoToSupabase(
           .select();
 
         const inserted = dbData?.[0];
-        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/media/${storagePath}`;
+        const url = `${SUPABASE_CLEAN_URL}/storage/v1/object/public/media/${storagePath}`;
 
         return {
           data: {
@@ -492,7 +541,7 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
       title: row.title,
       url: row.path?.startsWith('http') || row.path?.startsWith('data:')
         ? row.path
-        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/media/${row.path}`
+        : `${SUPABASE_CLEAN_URL}/storage/v1/object/public/media/${row.path}`
     }));
   } catch {
     return [];

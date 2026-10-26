@@ -7,34 +7,24 @@ import { createClient } from '@supabase/supabase-js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
-const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const rawUrl = process.env.VITE_SUPABASE_URL || '';
+const match = rawUrl.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
+const cleanUrl = match ? match[0] : 'https://utrpckrchcbqgzbhvlzy.supabase.co';
+const supabaseUrl = cleanUrl;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('ERROR: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing.');
-} else {
-  console.log('DEBUG: URL Length:', supabaseUrl.length);
-  // Identificar caracteres inválidos, incluindo espaços em branco ocultos
-  console.log('DEBUG: URL:', JSON.stringify(supabaseUrl));
-  console.log('DEBUG: First 5 chars codes:', [...supabaseUrl.substring(0, 5)].map(c => c.charCodeAt(0)));
-  const hasWhitespace = /\s/.test(supabaseUrl);
-  console.log('DEBUG: Contains whitespace:', hasWhitespace);
-
-}
-if (!supabaseServiceRoleKey) {
-  console.warn('WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Admin functions will be limited.');
+let anonKey = process.env.VITE_SUPABASE_ANON_KEY?.trim() || '';
+if (!anonKey || anonKey === 'SUPABASE_SERVICE_ROLE_KEY' || anonKey.length < 20) {
+  anonKey = 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
 }
 
-const match = supabaseUrl?.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
-const cleanUrl = match ? match[0] : (supabaseUrl?.trim() || '');
-console.log('DEBUG: Using cleaned URL:', cleanUrl);
-const supabase = cleanUrl ? createClient(cleanUrl, supabaseAnonKey || '') : null;
-const serverSupabase = (supabaseServiceRoleKey && cleanUrl) ? createClient(cleanUrl, supabaseServiceRoleKey) : supabase;
-
-if (!supabase) {
-  console.error('ERROR: Supabase Client could not be initialized. Check environment variables.');
+let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
+if (!serviceRoleKey || serviceRoleKey === 'ADMIN_API_SECRET' || serviceRoleKey.length < 25) {
+  serviceRoleKey = '';
 }
+
+console.log('DEBUG: Using sanitized Supabase URL:', cleanUrl);
+const supabase = createClient(cleanUrl, anonKey);
+const serverSupabase = (serviceRoleKey && cleanUrl) ? createClient(cleanUrl, serviceRoleKey) : supabase;
 
 // Middleware de autorização robusto para rotas administrativas do painel
 const authorizeAdmin = (req: any, res: any, next: any) => {
@@ -335,6 +325,21 @@ async function startServer() {
         return res.status(400).json({ error: error.message, code: error.code });
       }
       res.json({ data: data?.[0] || null });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Internal error' });
+    }
+  });
+
+  app.delete('/api/supabase/profiles/:id', authorizeAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const client = serverSupabase || supabase;
+      if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
+      const { error } = await client.from('profiles').delete().eq('id', id);
+      if (error) {
+        return res.status(400).json({ error: error.message, code: error.code });
+      }
+      res.json({ success: true });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Internal error' });
     }
