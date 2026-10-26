@@ -563,3 +563,24 @@ export async function createProfileInSupabase(input: { name: string; email?: str
   }
 }
 
+/**
+ * Busca perfis na tabela 'profiles' filtrando por role ('sponsor' ou 'family') respeitando a RLS
+ */
+export async function fetchProfilesByRole(role: string): Promise<any[]> {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', role);
+
+    if (error) {
+      console.warn(`Nota ao buscar perfis com role=${role}:`, error.message);
+      return [];
+    }
+    return data || [];
+  } catch (err: any) {
+    console.error(`Erro ao buscar perfis com role=${role}:`, err);
+    return [];
+  }
+}
+
