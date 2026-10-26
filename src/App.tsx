@@ -7570,19 +7570,12 @@ export default function App() {
                                 <button
                                   type="button"
                                   onClick={() => openInAppCamera('child', idx)}
-                                  className="inline-flex items-center space-x-1 px-2.5 py-1 rounded-xl bg-gradient-to-r from-pink-600 to-amber-500 hover:from-pink-500 hover:to-amber-400 text-white transition text-[10px] font-bold active:scale-95 shadow-sm"
-                                  title="Tirar foto desta criança com a câmera ao vivo"
+                                  className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-500/30 cursor-pointer transition text-[10px] font-bold active:scale-95 shadow-sm"
+                                  title="Editar foto desta criança"
                                 >
-                                  <Camera className="w-3 h-3 text-white" />
-                                  <span>📸 Câmera</span>
+                                  <ImageIcon className="w-3 h-3 text-pink-400" />
+                                  <span>Editar Foto</span>
                                 </button>
-                                <label 
-                                  htmlFor={`admin-card-file-${c.id || idx}`} 
-                                  className="inline-flex items-center space-x-1 px-2 py-1 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-500/30 cursor-pointer transition text-[10px] font-bold active:scale-95 shadow-sm"
-                                >
-                                  <Upload className="w-3 h-3 text-pink-400" />
-                                  <span>Galeria</span>
-                                </label>
                               </div>
                               <input 
                                 id={`admin-card-file-${c.id || idx}`} 
@@ -7764,17 +7757,44 @@ export default function App() {
                                 setNotification(`Alterações da criança "${c.name}" salvas com sucesso no Supabase!`);
                                 confetti({ particleCount: 30, spread: 40 });
                               }}
-                              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 via-pink-600 to-amber-600 hover:opacity-90 font-bold text-white text-xs shadow-lg active:scale-[0.98] transition flex items-center justify-center space-x-1.5"
+                              className="flex-1 py-2.5 rounded-xl bg-purple-800/60 hover:bg-purple-700/60 text-purple-200 font-bold text-[10px] border border-purple-500/40 active:scale-[0.98] transition flex items-center justify-center"
                             >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Salvar Alterações</span>
+                              Editar
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                const { error } = await updateKidInSupabase(c.id, { 
+                                  name: c.name, 
+                                  age: c.age, 
+                                  letter: c.letter,
+                                  image: c.image,
+                                  status: c.status,
+                                  birth_date: c.birthDate || null,
+                                  wishlist: {
+                                    desiredGift: c.desiredGift || '',
+                                    shoeSize: c.shoeSize || '',
+                                    clothesSize: c.clothesSize || '',
+                                    items: c.wishlist || []
+                                  }
+                                });
+
+                                if (error) {
+                                  console.error('Erro ao salvar alterações da criança no Supabase:', error);
+                                  setNotification('Erro ao salvar.');
+                                } else {
+                                  setNotification(`${c.name} atualizada!`);
+                                }
+                              }}
+                              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 font-bold text-white text-[10px] shadow-lg active:scale-[0.98] transition flex items-center justify-center space-x-1"
+                            >
+                              <Check className="w-3 h-3" />
+                              <span>Salvar</span>
                             </button>
                             <button 
                               onClick={() => deleteChild(c.id, c.name)}
-                              className="py-2.5 px-3.5 rounded-xl bg-red-600/20 hover:bg-red-600/40 text-red-300 font-bold text-xs border border-red-500/40 active:scale-[0.98] transition flex items-center justify-center space-x-1"
-                              title="Excluir Criança"
+                              className="flex-1 py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/40 text-red-300 font-bold text-[10px] border border-red-500/40 active:scale-[0.98] transition flex items-center justify-center space-x-1"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-3 h-3" />
                               <span>Excluir</span>
                             </button>
                           </div>
