@@ -13,13 +13,28 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('ERROR: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing.');
+} else {
+  console.log('DEBUG: URL Length:', supabaseUrl.length);
+  // Identificar caracteres inválidos, incluindo espaços em branco ocultos
+  console.log('DEBUG: URL:', JSON.stringify(supabaseUrl));
+  console.log('DEBUG: First 5 chars codes:', [...supabaseUrl.substring(0, 5)].map(c => c.charCodeAt(0)));
+  const hasWhitespace = /\s/.test(supabaseUrl);
+  console.log('DEBUG: Contains whitespace:', hasWhitespace);
+
 }
 if (!supabaseServiceRoleKey) {
   console.warn('WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Admin functions will be limited.');
 }
 
-const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
-const serverSupabase = supabaseServiceRoleKey ? createClient(supabaseUrl || '', supabaseServiceRoleKey) : null;
+const match = supabaseUrl?.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
+const cleanUrl = match ? match[0] : (supabaseUrl?.trim() || '');
+console.log('DEBUG: Using cleaned URL:', cleanUrl);
+const supabase = cleanUrl ? createClient(cleanUrl, supabaseAnonKey || '') : null;
+const serverSupabase = (supabaseServiceRoleKey && cleanUrl) ? createClient(cleanUrl, supabaseServiceRoleKey) : null;
+
+if (!supabase) {
+  console.error('ERROR: Supabase Client could not be initialized. Check environment variables.');
+}
 
 // Middleware de autorização estrita para rotas administrativas
 const authorizeAdmin = (req: any, res: any, next: any) => {

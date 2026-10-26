@@ -1,7 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Configurações do Supabase para o projeto Lar Esperança
-export const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 'https://utrpckrchcbqgzbhvlzy.supabase.co';
+const rawUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 'https://utrpckrchcbqgzbhvlzy.supabase.co';
+const match = rawUrl.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
+export const SUPABASE_URL = match ? match[0] : rawUrl.trim();
 export const SUPABASE_ANON_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
 
 // Cliente Supabase público seguro (usa chave anônima/publicável)
