@@ -59,14 +59,15 @@ async function startServer() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Endpoints seguros do Supabase (executados com segurança no backend)
+  // Endpoints seguros do Supabase (executados com segurança no backend sem expor chaves ao cliente)
   app.get('/api/supabase/data', async (req, res) => {
     try {
       const client = serverSupabase || supabase;
       if (!client) {
         return res.status(500).json({ error: 'Supabase client not configured' });
       }
-      const [kidsRes, giftsRes, settingsRes, galleryRes, profilesRes] = await Promise.all([
+
+      const [kidsResult, giftsResult, settingsResult, galleryResult, profilesResult] = await Promise.allSettled([
         client.from('kids').select('*').order('created_at', { ascending: true }),
         client.from('gifts').select('*'),
         client.from('site_settings').select('*').limit(1),
@@ -74,12 +75,19 @@ async function startServer() {
         client.from('profiles').select('*')
       ]);
 
+      const kids = (kidsResult.status === 'fulfilled' && !kidsResult.value.error) ? (kidsResult.value.data || []) : [];
+      const gifts = (giftsResult.status === 'fulfilled' && !giftsResult.value.error) ? (giftsResult.value.data || []) : [];
+      const siteSettings = (settingsResult.status === 'fulfilled' && !settingsResult.value.error) ? (settingsResult.value.data?.[0] || null) : null;
+      const gallery = (galleryResult.status === 'fulfilled' && !galleryResult.value.error) ? (galleryResult.value.data || []) : [];
+      const profiles = (profilesResult.status === 'fulfilled' && !profilesResult.value.error) ? (profilesResult.value.data || []) : [];
+
       res.json({
-        kids: kidsRes.data || [],
-        gifts: giftsRes.data || [],
-        siteSettings: settingsRes.data?.[0] || null,
-        gallery: galleryRes.data || [],
-        profiles: profilesRes.data || []
+        kids,
+        gifts,
+        siteSettings,
+        gallery,
+        profiles,
+        error: null
       });
     } catch (err: any) {
       console.error('Server error fetching Supabase data:', err);

@@ -50,22 +50,31 @@ export async function testSupabaseConnection(): Promise<{ ok: boolean; message: 
 }
 
 export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null> {
-  // 1. Tentar rota de API backend se disponível
+  // 1. Tentar rota de API backend se disponível (utiliza SUPABASE_SERVICE_ROLE_KEY no servidor de forma protegida)
   try {
     const apiRes = await fetch('/api/supabase/data', {
       headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
     });
     if (apiRes.ok) {
       const json = await apiRes.json();
-      return json;
+      if (json && typeof json === 'object') {
+        return {
+          kids: Array.isArray(json.kids) ? json.kids : [],
+          gifts: Array.isArray(json.gifts) ? json.gifts : [],
+          siteSettings: json.siteSettings || null,
+          gallery: Array.isArray(json.gallery) ? json.gallery : [],
+          profiles: Array.isArray(json.profiles) ? json.profiles : [],
+          error: json.error || null
+        };
+      }
     }
   } catch {
-    // API backend não disponível, prossegue com cliente Supabase direto
+    // API backend não disponível, prossegue com consulta direta pelo cliente Supabase
   }
 
-  // 2. Consulta direta via cliente Supabase
+  // 2. Consulta direta via cliente Supabase com tratamento individual para cada tabela
   try {
-    const [kidsRes, giftsRes, settingsRes, galleryRes, profilesRes] = await Promise.all([
+    const [kidsResult, giftsResult, settingsResult, galleryResult, profilesResult] = await Promise.allSettled([
       supabase.from('kids').select('*').order('created_at', { ascending: true }),
       supabase.from('gifts').select('*'),
       supabase.from('site_settings').select('*').limit(1),
@@ -73,20 +82,33 @@ export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null>
       supabase.from('profiles').select('*')
     ]);
 
-    const errors: string[] = [];
-    if (kidsRes.error) errors.push(`Kids: ${kidsRes.error.message}`);
-    if (giftsRes.error) errors.push(`Gifts: ${giftsRes.error.message}`);
-    if (settingsRes.error) errors.push(`Settings: ${settingsRes.error.message}`);
-    if (galleryRes.error) errors.push(`Gallery: ${galleryRes.error.message}`);
-    if (profilesRes.error) errors.push(`Profiles: ${profilesRes.error.message}`);
+    const kids = (kidsResult.status === 'fulfilled' && !kidsResult.value.error) ? (kidsResult.value.data || []) : [];
+    const gifts = (giftsResult.status === 'fulfilled' && !giftsResult.value.error) ? (giftsResult.value.data || []) : [];
+    const siteSettings = (settingsResult.status === 'fulfilled' && !settingsResult.value.error) ? (settingsResult.value.data?.[0] || null) : null;
+    const gallery = (galleryResult.status === 'fulfilled' && !galleryResult.value.error) ? (galleryResult.value.data || []) : [];
+    const profiles = (profilesResult.status === 'fulfilled' && !profilesResult.value.error) ? (profilesResult.value.data || []) : [];
+
+    // Erros críticos apenas se tabelas públicas essenciais falharem
+    const criticalErrors: string[] = [];
+    if (kidsResult.status === 'fulfilled' && kidsResult.value.error) criticalErrors.push(`Kids: ${kidsResult.value.error.message}`);
+    if (galleryResult.status === 'fulfilled' && galleryResult.value.error) criticalErrors.push(`Gallery: ${galleryResult.value.error.message}`);
+    if (settingsResult.status === 'fulfilled' && settingsResult.value.error) criticalErrors.push(`Settings: ${settingsResult.value.error.message}`);
+
+    // Log discreto para restrições RLS em gifts e profiles sem bloquear o carregamento
+    if (giftsResult.status === 'fulfilled' && giftsResult.value.error) {
+      console.warn('Nota RLS gifts (acesso restrito ao servidor):', giftsResult.value.error.message);
+    }
+    if (profilesResult.status === 'fulfilled' && profilesResult.value.error) {
+      console.warn('Nota RLS profiles (acesso restrito ao servidor):', profilesResult.value.error.message);
+    }
 
     return {
-      kids: kidsRes.data || [],
-      gifts: giftsRes.data || [],
-      siteSettings: settingsRes.data?.[0] || null,
-      gallery: galleryRes.data || [],
-      profiles: profilesRes.data || [],
-      error: errors.length > 0 ? errors.join(' | ') : null
+      kids,
+      gifts,
+      siteSettings,
+      gallery,
+      profiles,
+      error: criticalErrors.length > 0 ? criticalErrors.join(' | ') : null
     };
   } catch (err: any) {
     console.error('Error fetching data from Supabase:', err);

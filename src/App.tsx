@@ -1665,45 +1665,47 @@ export default function App() {
         return fullProfiles;
         });
 
-        const adminProf = data.profiles.find((p: any) => p.role === 'admin' || p.id === DEFAULT_ADMIN_PROFILE_ID);
-        if (adminProf) {
-          if (adminProf.name && adminProf.name !== 'Sem nome') setAdminName(adminProf.name);
-          if (adminProf.phone) setAdminPhone(adminProf.phone);
-          if (adminProf.bio) setAdminBio(adminProf.bio);
-          if (adminProf.photo_path) {
-            const avatarUrl = adminProf.photo_path.startsWith('http')
-              ? adminProf.photo_path
-              : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${adminProf.photo_path}`;
-            setAdminAvatar(avatarUrl);
+        if (Array.isArray(data.profiles) && data.profiles.length > 0) {
+          const adminProf = data.profiles.find((p: any) => p.role === 'admin' || p.id === DEFAULT_ADMIN_PROFILE_ID);
+          if (adminProf) {
+            if (adminProf.name && adminProf.name !== 'Sem nome') setAdminName(adminProf.name);
+            if (adminProf.phone) setAdminPhone(adminProf.phone);
+            if (adminProf.bio) setAdminBio(adminProf.bio);
+            if (adminProf.photo_path) {
+              const avatarUrl = adminProf.photo_path.startsWith('http')
+                ? adminProf.photo_path
+                : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${adminProf.photo_path}`;
+              setAdminAvatar(avatarUrl);
+            }
           }
-        }
 
-        const familyProf = data.profiles.find((p: any) => p.role === 'family');
-        if (familyProf) {
-          setFamilyUser(prev => ({
-            ...prev,
-            id: familyProf.id,
-            name: familyProf.name || prev.name,
-            phone: familyProf.phone || prev.phone,
-            bio: familyProf.bio || prev.bio,
-            avatar: familyProf.photo_path 
-              ? (familyProf.photo_path.startsWith('http') ? familyProf.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${familyProf.photo_path}`)
-              : prev.avatar
-          }));
-        }
+          const familyProf = data.profiles.find((p: any) => p.role === 'family');
+          if (familyProf) {
+            setFamilyUser(prev => ({
+              ...prev,
+              id: familyProf.id,
+              name: familyProf.name || prev.name,
+              phone: familyProf.phone || prev.phone,
+              bio: familyProf.bio || prev.bio,
+              avatar: familyProf.photo_path 
+                ? (familyProf.photo_path.startsWith('http') ? familyProf.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${familyProf.photo_path}`)
+                : prev.avatar
+            }));
+          }
 
-        const sponsorProf = data.profiles.find((p: any) => p.role === 'sponsor');
-        if (sponsorProf) {
-          setSponsorUser(prev => ({
-            ...prev,
-            id: sponsorProf.id,
-            name: sponsorProf.name || prev.name,
-            phone: sponsorProf.phone || prev.phone,
-            bio: sponsorProf.bio || prev.bio,
-            avatar: sponsorProf.photo_path 
-              ? (sponsorProf.photo_path.startsWith('http') ? sponsorProf.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${sponsorProf.photo_path}`)
-              : prev.avatar
-          }));
+          const sponsorProf = data.profiles.find((p: any) => p.role === 'sponsor');
+          if (sponsorProf) {
+            setSponsorUser(prev => ({
+              ...prev,
+              id: sponsorProf.id,
+              name: sponsorProf.name || prev.name,
+              phone: sponsorProf.phone || prev.phone,
+              bio: sponsorProf.bio || prev.bio,
+              avatar: sponsorProf.photo_path 
+                ? (sponsorProf.photo_path.startsWith('http') ? sponsorProf.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${sponsorProf.photo_path}`)
+                : prev.avatar
+            }));
+          }
         }
 
       if (data.error) {
