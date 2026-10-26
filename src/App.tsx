@@ -1374,10 +1374,17 @@ export default function App() {
         }
       }
 
-      setSupabaseSyncStatus('Sincronizado');
+      if (data.error) {
+        console.warn('Aviso do Supabase:', data.error);
+        setSupabaseSyncStatus(`Aviso Supabase: ${data.error}`);
+        setNotification(`Erro ao carregar dados do Supabase: ${data.error}`);
+      } else {
+        setSupabaseSyncStatus('Sincronizado');
+      }
     } catch (err: any) {
       console.error('Falha ao sincronizar Supabase:', err);
       setSupabaseSyncStatus('Erro');
+      setNotification(`Erro de conexão com o Supabase: ${err?.message || err}`);
     } finally {
       setIsLoadingSupabase(false);
     }

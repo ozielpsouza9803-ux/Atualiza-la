@@ -18,6 +18,7 @@ export interface SupabaseDataResult {
   siteSettings: any | null;
   gallery: any[];
   profiles: any[];
+  error?: string | null;
 }
 
 export async function testSupabaseConnection(): Promise<{ ok: boolean; message: string }> {
@@ -54,20 +55,31 @@ export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null>
       supabase.from('profiles').select('*')
     ]);
 
-    if (kidsRes.error) {
-      console.error('Erro ao buscar crianças no Supabase:', kidsRes.error);
-    }
+    const errors: string[] = [];
+    if (kidsRes.error) errors.push(`Kids: ${kidsRes.error.message}`);
+    if (giftsRes.error) errors.push(`Gifts: ${giftsRes.error.message}`);
+    if (settingsRes.error) errors.push(`Settings: ${settingsRes.error.message}`);
+    if (galleryRes.error) errors.push(`Gallery: ${galleryRes.error.message}`);
+    if (profilesRes.error) errors.push(`Profiles: ${profilesRes.error.message}`);
 
     return {
       kids: kidsRes.data || [],
       gifts: giftsRes.data || [],
       siteSettings: settingsRes.data?.[0] || null,
       gallery: galleryRes.data || [],
-      profiles: profilesRes.data || []
+      profiles: profilesRes.data || [],
+      error: errors.length > 0 ? errors.join(' | ') : null
     };
-  } catch (err) {
+  } catch (err: any) {
     console.error('Error fetching data from Supabase:', err);
-    return null;
+    return {
+      kids: [],
+      gifts: [],
+      siteSettings: null,
+      gallery: [],
+      profiles: [],
+      error: err?.message || 'Falha imprevista na conexão com o Supabase'
+    };
   }
 }
 
