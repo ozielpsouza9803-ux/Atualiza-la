@@ -27,6 +27,7 @@ import {
   uploadGalleryPhotoToSupabase,
   deleteGalleryPhotoFromSupabase,
   updateSiteSettingsInSupabase,
+  createProfileInSupabase,
   GalleryPhotoRecord,
   DEFAULT_ADMIN_PROFILE_ID, 
   DEFAULT_FAMILY_PROFILE_ID, 
@@ -1191,6 +1192,18 @@ export default function App() {
       return INITIAL_CHILDREN;
     }
   });
+  const [profilesList, setProfilesList] = useState<any[]>([]);
+  const [showNewSponsorForm, setShowNewSponsorForm] = useState(false);
+  const [newSponsorName, setNewSponsorName] = useState('');
+  const [newSponsorEmail, setNewSponsorEmail] = useState('');
+  const [newSponsorPhone, setNewSponsorPhone] = useState('');
+  const [newSponsorBio, setNewSponsorBio] = useState('');
+
+  const [showNewFamilyForm, setShowNewFamilyForm] = useState(false);
+  const [newFamilyName, setNewFamilyName] = useState('');
+  const [newFamilyEmail, setNewFamilyEmail] = useState('');
+  const [newFamilyPhone, setNewFamilyPhone] = useState('');
+  const [newFamilyBio, setNewFamilyBio] = useState('');
   const [galleryItems, setGalleryItems] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('galleryItems');
@@ -1393,6 +1406,7 @@ export default function App() {
 
       // 4. Mapear perfis reais do Supabase (Admin, Famílias e Padrinhos)
       if (data.profiles && data.profiles.length > 0) {
+        setProfilesList(data.profiles);
         const adminProf = data.profiles.find((p: any) => p.role === 'admin' || p.id === DEFAULT_ADMIN_PROFILE_ID);
         if (adminProf) {
           if (adminProf.name && adminProf.name !== 'Sem nome') setAdminName(adminProf.name);
@@ -5242,173 +5256,218 @@ export default function App() {
                 </div>
               )}
 
-              {/* GERENCIAR PADRINHOS (Com upload de foto da galeria e mensagens) */}
+              {/* GERENCIAR PADRINHOS (Lista e Cadastro de Padrinhos) */}
               {adminTab === 'padrinhos' && (
                 <div className="space-y-4 text-xs">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-amber-300 text-sm flex items-center space-x-1.5">
                       <Users className="w-4 h-4 text-pink-400" />
-                      <span>Gerenciar Padrinhos</span>
+                      <span>Gerenciar Padrinhos ({profilesList.filter(p => p.role === 'sponsor' || p.role === 'padrinho' || (!p.role && p.id !== DEFAULT_ADMIN_PROFILE_ID)).length})</span>
                     </h3>
-                    <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => setShowNewSponsorForm(!showNewSponsorForm)}
+                        className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] shadow active:scale-95 transition"
+                      >
+                        {showNewSponsorForm ? 'Cancelar' : '+ Cadastrar Padrinho'}
+                      </button>
+                      <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
+                    </div>
                   </div>
 
-                  {/* Edição do Padrinho pelo Administrador */}
-                  <div className="bg-[#2A1840] p-4 rounded-2xl border border-pink-500/30 space-y-3 shadow">
-                    <h4 className="font-bold text-pink-400 text-xs flex items-center space-x-1">
-                      <User className="w-4 h-4" />
-                      <span>Perfil do Padrinho: Dados & Foto da Galeria</span>
-                    </h4>
-
-                    <div className="flex items-center space-x-3 pb-2 border-b border-purple-900/50">
-                      <div 
-                        className="w-14 h-14 rounded-full overflow-hidden border-2 border-pink-500 select-none pointer-events-auto cursor-pointer shadow shrink-0"
-                        onClick={() => setZoomedImage(sponsorUser.avatar)}
-                        onContextMenu={(e) => e.preventDefault()}
-                      >
-                        <img src={sponsorUser.avatar} alt="Padrinho" className="w-full h-full object-cover select-none pointer-events-none" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <label htmlFor="admin-sponsor-avatar" className="inline-block px-3 py-1.5 rounded-xl bg-pink-600 text-white font-bold cursor-pointer active:scale-[0.98] text-[10px] shadow">
-                          + Enviar Foto da Galeria
-                        </label>
-                        <input id="admin-sponsor-avatar" type="file" accept="image/*" onChange={handleAdminUploadSponsorAvatar} className="hidden" />
-                        <p className="text-[9px] text-purple-300">Upload de foto do padrinho direto do dispositivo</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-purple-300 block mb-1">Nome do Padrinho</label>
+                  {showNewSponsorForm && (
+                    <div className="bg-[#2A1840] p-4 rounded-2xl border border-pink-500/40 space-y-3 shadow-xl">
+                      <h4 className="font-bold text-pink-300 text-xs">Cadastrar Novo Padrinho</h4>
                       <input 
                         type="text" 
-                        value={sponsorUser.name} 
-                        onChange={(e) => setSponsorUser({ ...sponsorUser, name: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white" 
+                        placeholder="Nome do Padrinho" 
+                        value={newSponsorName} 
+                        onChange={(e) => setNewSponsorName(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
                       />
-                    </div>
-                    <div>
-                      <label className="text-purple-300 block mb-1">WhatsApp / Telefone</label>
-                      <input 
-                        type="text" 
-                        value={sponsorUser.phone} 
-                        onChange={(e) => setSponsorUser({ ...sponsorUser, phone: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-purple-300 block mb-1">E-mail</label>
                       <input 
                         type="email" 
-                        value={sponsorUser.email} 
-                        onChange={(e) => setSponsorUser({ ...sponsorUser, email: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white" 
+                        placeholder="E-mail" 
+                        value={newSponsorEmail} 
+                        onChange={(e) => setNewSponsorEmail(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
                       />
-                    </div>
-                    <div>
-                      <label className="text-purple-300 block mb-1">Bio / Sobre o Padrinho</label>
+                      <input 
+                        type="text" 
+                        placeholder="WhatsApp / Telefone" 
+                        value={newSponsorPhone} 
+                        onChange={(e) => setNewSponsorPhone(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
+                      />
                       <textarea 
-                        value={sponsorUser.bio} 
-                        onChange={(e) => setSponsorUser({ ...sponsorUser, bio: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl p-2.5 text-white h-16 resize-none" 
+                        placeholder="Bio ou mensagem do padrinho..." 
+                        value={newSponsorBio} 
+                        onChange={(e) => setNewSponsorBio(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl p-2.5 text-white h-16 resize-none text-xs" 
                       />
+                      <button 
+                        onClick={async () => {
+                          if (!newSponsorName.trim()) {
+                            setNotification('Informe o nome do padrinho.');
+                            return;
+                          }
+                          const { data, error } = await createProfileInSupabase({
+                            name: newSponsorName.trim(),
+                            email: newSponsorEmail.trim(),
+                            phone: newSponsorPhone.trim(),
+                            bio: newSponsorBio.trim(),
+                            role: 'sponsor'
+                          });
+                          if (error) {
+                            setNotification(`Erro ao cadastrar padrinho: ${error.message || error}`);
+                            return;
+                          }
+                          setNotification('Padrinho cadastrado com sucesso!');
+                          setNewSponsorName('');
+                          setNewSponsorEmail('');
+                          setNewSponsorPhone('');
+                          setNewSponsorBio('');
+                          setShowNewSponsorForm(false);
+                          loadSupabaseData();
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-pink-600 font-bold text-white shadow active:scale-[0.98]"
+                      >
+                        Salvar Novo Padrinho
+                      </button>
                     </div>
-                    <div>
-                      <label className="text-pink-300 block mb-1 font-bold">Mensagem do Padrinho para a Família:</label>
-                      <textarea 
-                        value={sponsorUser.familyMessage || ''} 
-                        onChange={(e) => setSponsorUser({ ...sponsorUser, familyMessage: e.target.value })}
-                        placeholder="Mensagem carinhosa que a família acolhedora poderá ler..."
-                        className="w-full bg-[#1A1033] border border-pink-500/40 rounded-xl p-2.5 text-white h-20 resize-none" 
-                      />
-                    </div>
+                  )}
 
-                    <button 
-                      onClick={() => setNotification('Dados e foto do padrinho atualizados com sucesso!')}
-                      className="w-full py-2.5 rounded-xl bg-pink-600 font-bold text-white shadow active:scale-[0.98]"
-                    >
-                      Salvar Dados do Padrinho
-                    </button>
+                  <div className="space-y-2.5">
+                    {profilesList.filter(p => p.role === 'sponsor' || p.role === 'padrinho' || (!p.role && p.id !== DEFAULT_ADMIN_PROFILE_ID)).map((prof) => {
+                      const avatar = prof.photo_path 
+                        ? (prof.photo_path.startsWith('http') ? prof.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${prof.photo_path}`)
+                        : 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop';
+                      return (
+                        <div key={prof.id} className="p-3.5 rounded-2xl bg-[#2A1840] border border-pink-500/30 flex items-center justify-between space-x-3 shadow">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-pink-500 shrink-0 select-none">
+                              <img src={avatar} alt={prof.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-white text-xs truncate">{prof.name || 'Sem nome'}</h4>
+                              <p className="text-[10px] text-purple-300 truncate">{prof.email || 'E-mail não informado'} • {prof.phone || 'Sem telefone'}</p>
+                              {prof.bio && <p className="text-[10px] text-purple-200/80 truncate mt-0.5">{prof.bio}</p>}
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-pink-600/30 text-pink-300 border border-pink-500/40 text-[9px] font-bold shrink-0">
+                            Padrinho
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
 
-              {/* GERENCIAR FAMÍLIAS (Com upload de foto da galeria e mensagens) */}
+              {/* GERENCIAR FAMÍLIAS (Lista e Cadastro de Famílias) */}
               {adminTab === 'familias' && (
                 <div className="space-y-4 text-xs">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-amber-300 text-sm flex items-center space-x-1.5">
                       <Users className="w-4 h-4 text-amber-400" />
-                      <span>Gerenciar Famílias</span>
+                      <span>Gerenciar Famílias ({profilesList.filter(p => p.role === 'family' || p.role === 'familia').length})</span>
                     </h3>
-                    <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
+                    <div className="flex items-center space-x-2">
+                      <button 
+                        onClick={() => setShowNewFamilyForm(!showNewFamilyForm)}
+                        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] shadow active:scale-95 transition"
+                      >
+                        {showNewFamilyForm ? 'Cancelar' : '+ Cadastrar Família'}
+                      </button>
+                      <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
+                    </div>
                   </div>
 
-                  {/* Edição da Família pelo Administrador */}
-                  <div className="bg-[#2A1840] p-4 rounded-2xl border border-amber-500/30 space-y-3 shadow">
-                    <h4 className="font-bold text-amber-400 text-xs flex items-center space-x-1">
-                      <Users className="w-4 h-4" />
-                      <span>Perfil da Família: Dados & Foto da Galeria</span>
-                    </h4>
-
-                    <div className="flex items-center space-x-3 pb-2 border-b border-purple-900/50">
-                      <div 
-                        className="w-14 h-14 rounded-full overflow-hidden border-2 border-amber-400 select-none pointer-events-auto cursor-pointer shadow shrink-0"
-                        onClick={() => setZoomedImage(familyUser.avatar)}
-                        onContextMenu={(e) => e.preventDefault()}
-                      >
-                        <img src={familyUser.avatar} alt="Família" className="w-full h-full object-cover select-none pointer-events-none" />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <label htmlFor="admin-family-avatar" className="inline-block px-3 py-1.5 rounded-xl bg-amber-500 text-black font-bold cursor-pointer active:scale-[0.98] text-[10px] shadow">
-                          + Enviar Foto da Galeria
-                        </label>
-                        <input id="admin-family-avatar" type="file" accept="image/*" onChange={handleAdminUploadFamilyAvatar} className="hidden" />
-                        <p className="text-[9px] text-purple-300">Upload de foto da família direto do dispositivo</p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="text-purple-300 block mb-1">Nome dos Responsáveis / Família</label>
+                  {showNewFamilyForm && (
+                    <div className="bg-[#2A1840] p-4 rounded-2xl border border-amber-500/40 space-y-3 shadow-xl">
+                      <h4 className="font-bold text-amber-300 text-xs">Cadastrar Nova Família</h4>
                       <input 
                         type="text" 
-                        value={familyUser.name} 
-                        onChange={(e) => setFamilyUser({ ...familyUser, name: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white" 
+                        placeholder="Nome dos Responsáveis / Família" 
+                        value={newFamilyName} 
+                        onChange={(e) => setNewFamilyName(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
                       />
-                    </div>
-                    <div>
-                      <label className="text-purple-300 block mb-1">WhatsApp / Contato</label>
-                      <input 
-                        type="text" 
-                        value={familyUser.phone} 
-                        onChange={(e) => setFamilyUser({ ...familyUser, phone: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white" 
-                      />
-                    </div>
-                    <div>
-                      <label className="text-purple-300 block mb-1">E-mail</label>
                       <input 
                         type="email" 
-                        value={familyUser.email} 
-                        onChange={(e) => setFamilyUser({ ...familyUser, email: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white" 
+                        placeholder="E-mail" 
+                        value={newFamilyEmail} 
+                        onChange={(e) => setNewFamilyEmail(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
                       />
-                    </div>
-                    <div>
-                      <label className="text-purple-300 block mb-1">Bio / História da Família</label>
+                      <input 
+                        type="text" 
+                        placeholder="WhatsApp / Contato" 
+                        value={newFamilyPhone} 
+                        onChange={(e) => setNewFamilyPhone(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
+                      />
                       <textarea 
-                        value={familyUser.bio} 
-                        onChange={(e) => setFamilyUser({ ...familyUser, bio: e.target.value })}
-                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl p-2.5 text-white h-16 resize-none" 
+                        placeholder="História ou bio da família acolhedora..." 
+                        value={newFamilyBio} 
+                        onChange={(e) => setNewFamilyBio(e.target.value)}
+                        className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl p-2.5 text-white h-16 resize-none text-xs" 
                       />
+                      <button 
+                        onClick={async () => {
+                          if (!newFamilyName.trim()) {
+                            setNotification('Informe o nome da família.');
+                            return;
+                          }
+                          const { data, error } = await createProfileInSupabase({
+                            name: newFamilyName.trim(),
+                            email: newFamilyEmail.trim(),
+                            phone: newFamilyPhone.trim(),
+                            bio: newFamilyBio.trim(),
+                            role: 'family'
+                          });
+                          if (error) {
+                            setNotification(`Erro ao cadastrar família: ${error.message || error}`);
+                            return;
+                          }
+                          setNotification('Família cadastrada com sucesso!');
+                          setNewFamilyName('');
+                          setNewFamilyEmail('');
+                          setNewFamilyPhone('');
+                          setNewFamilyBio('');
+                          setShowNewFamilyForm(false);
+                          loadSupabaseData();
+                        }}
+                        className="w-full py-2.5 rounded-xl bg-amber-500 font-bold text-black shadow active:scale-[0.98]"
+                      >
+                        Salvar Nova Família
+                      </button>
                     </div>
+                  )}
 
-                    <button 
-                      onClick={() => setNotification('Dados e foto da família atualizados com sucesso!')}
-                      className="w-full py-2.5 rounded-xl bg-amber-500 font-bold text-black shadow active:scale-[0.98]"
-                    >
-                      Salvar Dados da Família
-                    </button>
+                  <div className="space-y-2.5">
+                    {profilesList.filter(p => p.role === 'family' || p.role === 'familia').map((prof) => {
+                      const avatar = prof.photo_path 
+                        ? (prof.photo_path.startsWith('http') ? prof.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${prof.photo_path}`)
+                        : 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=300&h=300&fit=crop';
+                      return (
+                        <div key={prof.id} className="p-3.5 rounded-2xl bg-[#2A1840] border border-amber-500/30 flex items-center justify-between space-x-3 shadow">
+                          <div className="flex items-center space-x-3 min-w-0">
+                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400 shrink-0 select-none">
+                              <img src={avatar} alt={prof.name} className="w-full h-full object-cover" />
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-white text-xs truncate">{prof.name || 'Família Acolhedora'}</h4>
+                              <p className="text-[10px] text-purple-300 truncate">{prof.email || 'E-mail não informado'} • {prof.phone || 'Sem telefone'}</p>
+                              {prof.bio && <p className="text-[10px] text-purple-200/80 truncate mt-0.5">{prof.bio}</p>}
+                            </div>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-bold shrink-0">
+                            Família
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}

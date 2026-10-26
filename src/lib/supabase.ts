@@ -530,3 +530,25 @@ export async function updateSiteSettingsInSupabase(slidesData: any) {
     return { data: null, error: err?.message || 'Erro ao salvar configurações do site.' };
   }
 }
+
+/**
+ * Cria um novo perfil na tabela 'profiles' do Supabase (para novos padrinhos ou famílias)
+ */
+export async function createProfileInSupabase(input: { name: string; email?: string; phone?: string; bio?: string; role: string; photo_path?: string }) {
+  try {
+    const row = {
+      name: input.name.trim(),
+      email: input.email || null,
+      phone: input.phone || null,
+      bio: input.bio || null,
+      role: input.role,
+      photo_path: input.photo_path || null,
+      updated_at: new Date().toISOString()
+    };
+    const { data, error } = await supabase.from('profiles').insert([row]).select();
+    return { data: data?.[0] || null, error };
+  } catch (err: any) {
+    return { data: null, error: err };
+  }
+}
+
