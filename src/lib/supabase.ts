@@ -123,7 +123,17 @@ export async function createKidInSupabase(input: KidInput) {
     approved: input.approved !== undefined ? input.approved : true
   };
 
-  // 1. Tentar via backend proxy
+  // 1. Tentar cliente Supabase direto primeiro (evita Failed to fetch se proxy demorar)
+  try {
+    const { data, error } = await supabase.from('kids').insert([row]).select();
+    if (!error && data && data.length > 0) {
+      return { data: data[0], error: null };
+    }
+  } catch (dirErr) {
+    console.warn('Direct Supabase insert note:', dirErr);
+  }
+
+  // 2. Fallback via backend proxy
   try {
     const apiRes = await fetch('/api/supabase/kids', {
       method: 'POST',
@@ -136,14 +146,15 @@ export async function createKidInSupabase(input: KidInput) {
     if (apiRes.ok) {
       const json = await apiRes.json();
       return { data: json.data, error: null };
+    } else {
+      const errJson = await apiRes.json().catch(() => null);
+      return { data: null, error: errJson?.error || 'Erro ao cadastrar criança no servidor.' };
     }
-  } catch {
-    // Prosseguir para fallback direto
+  } catch (err: any) {
+    // 3. Última tentativa direta com erro explícito se falhar
+    const { data, error } = await supabase.from('kids').insert([row]).select();
+    return { data: data?.[0] || null, error };
   }
-
-  // 2. Fallback direto via cliente Supabase
-  const { data, error } = await supabase.from('kids').insert([row]).select();
-  return { data: data?.[0] || null, error };
 }
 
 /**

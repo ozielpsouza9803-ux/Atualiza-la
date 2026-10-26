@@ -30,7 +30,7 @@ const match = supabaseUrl?.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
 const cleanUrl = match ? match[0] : (supabaseUrl?.trim() || '');
 console.log('DEBUG: Using cleaned URL:', cleanUrl);
 const supabase = cleanUrl ? createClient(cleanUrl, supabaseAnonKey || '') : null;
-const serverSupabase = (supabaseServiceRoleKey && cleanUrl) ? createClient(cleanUrl, supabaseServiceRoleKey) : (cleanUrl ? createClient(cleanUrl, supabaseAnonKey || '') : null);
+const serverSupabase = (supabaseServiceRoleKey && cleanUrl) ? createClient(cleanUrl, supabaseServiceRoleKey) : supabase;
 
 if (!supabase) {
   console.error('ERROR: Supabase Client could not be initialized. Check environment variables.');
