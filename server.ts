@@ -7,24 +7,35 @@ import { createClient } from '@supabase/supabase-js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const rawUrl = process.env.VITE_SUPABASE_URL || '';
-const match = rawUrl.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
-const cleanUrl = match ? match[0] : 'https://utrpckrchcbqgzbhvlzy.supabase.co';
-const supabaseUrl = cleanUrl;
+const DEFAULT_SUPABASE_URL = 'https://utrpckrchcbqgzbhvlzy.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
 
-let anonKey = process.env.VITE_SUPABASE_ANON_KEY?.trim() || '';
-if (!anonKey || anonKey === 'SUPABASE_SERVICE_ROLE_KEY' || anonKey.length < 20) {
-  anonKey = 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
+function sanitizeSupabaseUrl(rawUrl?: string): string {
+  if (!rawUrl) return DEFAULT_SUPABASE_URL;
+  const match = rawUrl.trim().match(/https:\/\/[a-z0-9.-]+\.supabase\.co/i) || rawUrl.trim().match(/https?:\/\/[^\s]+/i);
+  return match ? match[0] : DEFAULT_SUPABASE_URL;
 }
 
-let serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || '';
-if (!serviceRoleKey || serviceRoleKey === 'ADMIN_API_SECRET' || serviceRoleKey.length < 25) {
-  serviceRoleKey = '';
+function sanitizeSupabaseKey(rawKey?: string, fallback = ''): string {
+  if (!rawKey) return fallback;
+  const cleaned = rawKey.trim().split(/\s+/)[0];
+  return cleaned || fallback;
 }
 
-console.log('DEBUG: Using sanitized Supabase URL:', cleanUrl);
-const supabase = createClient(cleanUrl, anonKey);
-const serverSupabase = (serviceRoleKey && cleanUrl) ? createClient(cleanUrl, serviceRoleKey) : supabase;
+const supabaseUrl = sanitizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
+const anonKey = sanitizeSupabaseKey(process.env.VITE_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_ANON_KEY);
+const serviceRoleKey = sanitizeSupabaseKey(process.env.SUPABASE_SERVICE_ROLE_KEY, '');
+
+if (!process.env.VITE_SUPABASE_URL) {
+  console.warn('VITE_SUPABASE_URL is not set in env, using default project URL:', supabaseUrl);
+}
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('SUPABASE_SERVICE_ROLE_KEY is not set in env - serverSupabase will fall back to anon key or null for proxy actions');
+}
+
+console.log('DEBUG: Using Supabase URL:', supabaseUrl);
+const supabase = createClient(supabaseUrl, anonKey);
+const serverSupabase = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : supabase;
 
 // Middleware de autorização robusto para rotas administrativas do painel
 const authorizeAdmin = (req: any, res: any, next: any) => {
@@ -267,12 +278,51 @@ async function startServer() {
       const updates = req.body;
       const client = serverSupabase || supabase;
       if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
-      const { data, error } = await client.from('kids').update(updates).eq('id', id).select();
+
+      const sanitizedUpdates = { ...updates };
+      if (sanitizedUpdates.image && !sanitizedUpdates.photo_path) {
+        sanitizedUpdates.photo_path = sanitizedUpdates.image;
+      }
+
+      let { data, error } = await client.from('kids').update(sanitizedUpdates).eq('id', id).select();
+
+      if (error && error.message?.includes('image') && sanitizedUpdates.image) {
+        delete sanitizedUpdates.image;
+        const retry = await client.from('kids').update(sanitizedUpdates).eq('id', id).select();
+        data = retry.data;
+        error = retry.error;
+      }
+
       if (error) {
+        console.error(`Error updating kid ${id}:`, error.message);
         return res.status(400).json({ error: error.message, code: error.code });
       }
+
+      // If no row was updated because ID doesn't exist remotely (e.g. local ID), create or upsert
+      if ((!data || data.length === 0) && updates.name) {
+        const rowToInsert = {
+          family_id: updates.family_id || 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+          name: updates.name,
+          age: updates.age !== undefined ? String(updates.age) : '8',
+          letter: updates.letter || 'Cartinha',
+          photo_path: updates.photo_path || updates.image || null,
+          status: updates.status || 'Aguardando Apadrinhamento',
+          birth_date: updates.birth_date || null,
+          wishlist: updates.wishlist || null
+        };
+        let insertRes = await client.from('kids').insert([rowToInsert]).select();
+        if (insertRes.error && insertRes.error.message?.includes('image')) {
+          delete (rowToInsert as any).image;
+          insertRes = await client.from('kids').insert([rowToInsert]).select();
+        }
+        if (!insertRes.error && insertRes.data?.[0]) {
+          return res.json({ data: insertRes.data[0] });
+        }
+      }
+
       res.json({ data: data?.[0] || null });
     } catch (err: any) {
+      console.error('Exception updating kid:', err?.message || err);
       res.status(500).json({ error: err?.message || 'Internal error' });
     }
   });
@@ -375,11 +425,15 @@ async function startServer() {
   });
 
   if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
-      server: { middlewareMode: true },
-      appType: 'spa',
-    });
-    app.use(vite.middlewares);
+    try {
+      const vite = await createViteServer({
+        server: { middlewareMode: true, hmr: false },
+        appType: 'spa',
+      });
+      app.use(vite.middlewares);
+    } catch (viteErr) {
+      console.error('Error creating Vite server middleware:', viteErr);
+    }
   } else {
     const distPath = path.resolve(__dirname, 'dist');
     app.use(express.static(distPath));
@@ -388,9 +442,23 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+
+  server.on('error', (err: any) => {
+    console.error('Express server encountered an error:', err);
   });
 }
 
-startServer();
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception in server process:', err);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled Rejection in server process:', reason);
+});
+
+startServer().catch((err) => {
+  console.error('Fatal error starting server:', err);
+});

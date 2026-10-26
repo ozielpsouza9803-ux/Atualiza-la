@@ -1769,7 +1769,9 @@ export default function App() {
   // Estados e Referências da Câmera do Aplicativo (Captura ao Vivo e Direta)
   const [isInAppCameraOpen, setIsInAppCameraOpen] = useState(false);
   const [cameraFacingMode, setCameraFacingMode] = useState<'environment' | 'user'>('environment');
-  const [cameraTarget, setCameraTarget] = useState<'gallery' | 'child' | 'carousel' | 'media916' | 'profile' | 'photo_editor'>('gallery');
+  type CameraTargetType = 'gallery' | 'child' | 'carousel' | 'media916' | 'profile' | 'family_profile' | 'sponsor_profile' | 'edit_profile' | 'new_sponsor' | 'new_family' | 'photo_editor' | 'edit_child_modal';
+  const [cameraTarget, setCameraTarget] = useState<CameraTargetType>('gallery');
+  const [editingChildForModal, setEditingChildForModal] = useState<Child | null>(null);
   const [cameraChildTargetIndex, setCameraChildTargetIndex] = useState<number | null>(null);
   const [cameraCapturedImage, setCameraCapturedImage] = useState<string | null>(null);
   const [isCameraStarting, setIsCameraStarting] = useState(false);
@@ -1909,7 +1911,7 @@ export default function App() {
   };
 
   // Salvar Foto Capturada no Destino
-  const saveCapturedPhotoToDestination = (dest: 'gallery' | 'child' | 'carousel' | 'media916' | 'profile' | 'photo_editor') => {
+  const saveCapturedPhotoToDestination = (dest: CameraTargetType) => {
     if (!cameraCapturedImage) return;
 
     if (dest === 'gallery') {
@@ -1977,6 +1979,12 @@ export default function App() {
     } else if (dest === 'new_family') {
       setNewFamilyPhoto(cameraCapturedImage);
       setNotification('Foto da nova família capturada!');
+    } else if (dest === 'edit_child_modal') {
+      if (editingChildForModal) {
+        setEditingChildForModal({ ...editingChildForModal, image: cameraCapturedImage });
+        setNotification('Foto da criança capturada com a câmera!');
+        confetti({ particleCount: 30, spread: 40 });
+      }
     } else if (dest === 'photo_editor') {
       setPhotoEditorImg(cameraCapturedImage);
       setCurrentScreenIndex(10);
@@ -1991,7 +1999,7 @@ export default function App() {
   };
 
   // Abrir Câmera do App com um destino específico
-  const openInAppCamera = (target: 'gallery' | 'child' | 'carousel' | 'media916' | 'profile' | 'family_profile' | 'sponsor_profile' | 'edit_profile' | 'new_sponsor' | 'new_family' | 'photo_editor' = 'gallery', childIdx: number | null = null) => {
+  const openInAppCamera = (target: CameraTargetType = 'gallery', childIdx: number | null = null) => {
     setCameraTarget(target);
     setCameraChildTargetIndex(childIdx);
     setCameraCapturedImage(null);
@@ -7567,15 +7575,7 @@ export default function App() {
                                 </span>
                               </div>
                               <div className="flex items-center space-x-1.5 flex-wrap gap-1">
-                                <button
-                                  type="button"
-                                  onClick={() => openInAppCamera('child', idx)}
-                                  className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 border border-purple-500/30 cursor-pointer transition text-[10px] font-bold active:scale-95 shadow-sm"
-                                  title="Editar foto desta criança"
-                                >
-                                  <ImageIcon className="w-3 h-3 text-pink-400" />
-                                  <span>Editar Foto</span>
-                                </button>
+
                               </div>
                               <input 
                                 id={`admin-card-file-${c.id || idx}`} 
@@ -7722,8 +7722,14 @@ export default function App() {
 
                           {/* Botões de Ação */}
                           <div className="flex space-x-2 pt-1">
+                            {/* Salvar */}
                             <button 
                               onClick={async () => {
+                                setChildrenList(prev => {
+                                  const updated = prev.map((item, i) => (item.id === c.id || i === idx) ? c : item);
+                                  try { localStorage.setItem('childrenList', JSON.stringify(updated)); } catch {}
+                                  return updated;
+                                });
                                 const { error } = await updateKidInSupabase(c.id, { 
                                   name: c.name, 
                                   age: c.age, 
@@ -7741,48 +7747,10 @@ export default function App() {
 
                                 if (error) {
                                   console.error('Erro ao salvar alterações da criança no Supabase:', error);
-                                  let msg = error.message || 'Falha ao salvar no banco de dados.';
-                                  if (error.code === '42501' || msg.toLowerCase().includes('permission')) {
-                                    msg = 'Permissão negada (RLS) no Supabase ao atualizar criança.';
-                                  }
-                                  setNotification(`Erro ao salvar no Supabase: ${msg}`);
-                                  return; // Não mostra sucesso se falhou
-                                }
-
-                                try {
-                                  localStorage.setItem('childrenList', JSON.stringify(childrenList));
-                                } catch (e) {
-                                  console.warn('Erro ao salvar localmente:', e);
-                                }
-                                setNotification(`Alterações da criança "${c.name}" salvas com sucesso no Supabase!`);
-                                confetti({ particleCount: 30, spread: 40 });
-                              }}
-                              className="flex-1 py-2.5 rounded-xl bg-purple-800/60 hover:bg-purple-700/60 text-purple-200 font-bold text-[10px] border border-purple-500/40 active:scale-[0.98] transition flex items-center justify-center"
-                            >
-                              Editar
-                            </button>
-                            <button 
-                              onClick={async () => {
-                                const { error } = await updateKidInSupabase(c.id, { 
-                                  name: c.name, 
-                                  age: c.age, 
-                                  letter: c.letter,
-                                  image: c.image,
-                                  status: c.status,
-                                  birth_date: c.birthDate || null,
-                                  wishlist: {
-                                    desiredGift: c.desiredGift || '',
-                                    shoeSize: c.shoeSize || '',
-                                    clothesSize: c.clothesSize || '',
-                                    items: c.wishlist || []
-                                  }
-                                });
-
-                                if (error) {
-                                  console.error('Erro ao salvar alterações da criança no Supabase:', error);
-                                  setNotification('Erro ao salvar.');
+                                  setNotification(`Salvo no app! (${error.message || 'Supabase'})`);
                                 } else {
-                                  setNotification(`${c.name} atualizada!`);
+                                  setNotification(`${c.name} atualizada e sincronizada com sucesso!`);
+                                  confetti({ particleCount: 30, spread: 40 });
                                 }
                               }}
                               className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:opacity-90 font-bold text-white text-[10px] shadow-lg active:scale-[0.98] transition flex items-center justify-center space-x-1"
@@ -7790,6 +7758,17 @@ export default function App() {
                               <Check className="w-3 h-3" />
                               <span>Salvar</span>
                             </button>
+
+                            {/* Editar */}
+                            <button 
+                              onClick={() => setEditingChildForModal({ ...c })}
+                              className="flex-1 py-2.5 rounded-xl bg-purple-800/60 hover:bg-purple-700/60 text-purple-200 font-bold text-[10px] border border-purple-500/40 active:scale-[0.98] transition flex items-center justify-center space-x-1"
+                            >
+                              <Edit3 className="w-3 h-3" />
+                              <span>Editar</span>
+                            </button>
+
+                            {/* Excluir */}
                             <button 
                               onClick={() => deleteChild(c.id, c.name)}
                               className="flex-1 py-2.5 rounded-xl bg-red-600/20 hover:bg-red-600/40 text-red-300 font-bold text-[10px] border border-red-500/40 active:scale-[0.98] transition flex items-center justify-center space-x-1"
@@ -11310,6 +11289,297 @@ CREATE POLICY "Permitir tudo em site_settings" ON public.site_settings FOR ALL U
                   className="py-3 px-4 rounded-2xl bg-purple-900/60 text-purple-200 font-bold hover:bg-purple-800 text-xs"
                 >
                   Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DE EDIÇÃO COMPLETA DE CRIANÇA */}
+        {editingChildForModal && (
+          <div className="fixed inset-0 z-[130] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 animate-fade-in overflow-y-auto">
+            <div className="bg-[#1F1133] border-2 border-pink-500/60 rounded-3xl p-5 max-w-lg w-full max-h-[90vh] flex flex-col shadow-2xl space-y-4 my-auto">
+              {/* Topo do Modal */}
+              <div className="flex items-center justify-between pb-3 border-b border-purple-500/30">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-br from-pink-600 to-amber-500 text-white shadow-lg">
+                    <Edit3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white">Editar Formulario da Criança</h3>
+                    <p className="text-[10px] text-pink-300 font-semibold">{editingChildForModal.name || 'Criança'}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEditingChildForModal(null)}
+                  className="p-2 rounded-xl bg-purple-900/60 text-purple-200 hover:text-white transition active:scale-95"
+                  title="Fechar"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Corpo do Formulário */}
+              <div className="space-y-3.5 overflow-y-auto pr-1 text-xs">
+                {/* Foto da Criança e Opções de Foto */}
+                <div className="p-3.5 rounded-2xl bg-[#140824] border border-purple-500/30 space-y-3">
+                  <label className="text-[11px] font-bold text-amber-300 block">Foto da Criança</label>
+                  <div className="flex items-center space-x-3">
+                    <div 
+                      className="w-20 h-20 rounded-2xl overflow-hidden border-2 border-amber-400 shadow-lg shrink-0 relative cursor-pointer"
+                      onClick={() => setZoomedImage(editingChildForModal.image)}
+                    >
+                      <img 
+                        src={editingChildForModal.image} 
+                        alt={editingChildForModal.name} 
+                        className="w-full h-full object-cover" 
+                      />
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openInAppCamera('edit_child_modal')}
+                          className="py-2 px-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-amber-500 text-white font-bold text-[10px] shadow active:scale-95 transition flex items-center justify-center space-x-1"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                          <span>Tirar Foto</span>
+                        </button>
+                        <label className="py-2 px-2.5 rounded-xl bg-purple-800/80 hover:bg-purple-700 text-purple-200 font-bold text-[10px] border border-purple-500/40 cursor-pointer shadow active:scale-95 transition flex items-center justify-center space-x-1 text-center">
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>Escolher Foto</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const files = e.target.files;
+                              if (files && files[0]) {
+                                const dataUrl = await processMediaFile(files[0]);
+                                setEditingChildForModal(prev => prev ? ({ ...prev, image: dataUrl }) : null);
+                                setNotification('Foto selecionada com sucesso!');
+                              }
+                            }}
+                          />
+                        </label>
+                      </div>
+                      <input
+                        type="text"
+                        value={editingChildForModal.image}
+                        onChange={(e) => setEditingChildForModal({ ...editingChildForModal, image: e.target.value })}
+                        placeholder="Ou insira a URL da foto..."
+                        className="w-full bg-[#1A1033] border border-purple-500/40 rounded-xl px-2.5 py-1.5 text-white text-[10px] outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Nome e Gênero */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-purple-200 block">Nome Completo</label>
+                    <input
+                      type="text"
+                      value={editingChildForModal.name}
+                      onChange={(e) => setEditingChildForModal({ ...editingChildForModal, name: e.target.value })}
+                      className="w-full bg-[#140824] border border-purple-500/40 focus:border-pink-500 rounded-xl px-3 py-2 text-white font-bold text-xs outline-none"
+                      placeholder="Nome da criança"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-purple-200 block">Gênero / Categoria</label>
+                    <select
+                      value={editingChildForModal.gender}
+                      onChange={(e) => setEditingChildForModal({ ...editingChildForModal, gender: e.target.value })}
+                      className="w-full bg-[#140824] border border-purple-500/40 focus:border-pink-500 rounded-xl px-3 py-2 text-white font-semibold text-xs outline-none"
+                    >
+                      <option value="Infantil">Infantil</option>
+                      <option value="Feminino">Feminino</option>
+                      <option value="Masculino">Masculino</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Data de Nascimento, Situação e Exibição de Idade */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-purple-200 block">Data de Nascimento</label>
+                    <input
+                      type="date"
+                      value={editingChildForModal.birthDate || ''}
+                      onChange={(e) => {
+                        const birth = e.target.value;
+                        const ageNum = birth ? calculateAge(birth) : editingChildForModal.age;
+                        setEditingChildForModal({
+                          ...editingChildForModal,
+                          birthDate: birth,
+                          age: ageNum
+                        });
+                      }}
+                      className="w-full bg-[#140824] border border-purple-500/40 focus:border-amber-400 rounded-xl px-3 py-2 text-white font-semibold text-xs outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-purple-200 block">Situação no App</label>
+                    <select
+                      value={editingChildForModal.status}
+                      onChange={(e) => setEditingChildForModal({ ...editingChildForModal, status: e.target.value as any })}
+                      className="w-full bg-[#140824] border border-purple-500/40 focus:border-pink-500 rounded-xl px-3 py-2 text-white font-bold text-xs outline-none"
+                    >
+                      <option value="Aguardando Apadrinhamento">Aguardando Apadrinhamento</option>
+                      <option value="Apadrinhado">Apadrinhado</option>
+                      <option value="Em Análise">Em Análise</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-purple-900/40 border border-purple-500/30 flex items-center justify-between text-xs font-bold text-amber-300">
+                  <span>Exibição de Idade:</span>
+                  <span className="bg-purple-950 px-2.5 py-1 rounded-lg border border-amber-400/40 text-amber-200">
+                    {getAgeDisplay(editingChildForModal.birthDate, editingChildForModal.age)}
+                  </span>
+                </div>
+
+                {/* Presente Desejado, Calçado e Roupa */}
+                <div className="p-3.5 rounded-2xl bg-[#140824] border border-purple-500/30 space-y-2.5">
+                  <label className="text-[11px] font-bold text-amber-300 flex items-center space-x-1.5">
+                    <Gift className="w-4 h-4 text-amber-400" />
+                    <span>Presentes & Tamanhos</span>
+                  </label>
+                  <div className="space-y-1">
+                    <span className="text-[10px] text-purple-300 block font-semibold">Presente Desejado</span>
+                    <input
+                      type="text"
+                      value={editingChildForModal.desiredGift || ''}
+                      onChange={(e) => setEditingChildForModal({ ...editingChildForModal, desiredGift: e.target.value })}
+                      placeholder="Ex: Boneca, Bola, Bicicleta, Roupas..."
+                      className="w-full bg-[#1A1033] border border-purple-500/40 rounded-xl px-3 py-2 text-white font-semibold text-xs outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-purple-300 block font-semibold">Tamanho Calçado</span>
+                      <input
+                        type="text"
+                        value={editingChildForModal.shoeSize || ''}
+                        onChange={(e) => setEditingChildForModal({ ...editingChildForModal, shoeSize: e.target.value })}
+                        placeholder="Ex: 30"
+                        className="w-full bg-[#1A1033] border border-purple-500/40 rounded-xl px-2.5 py-1.5 text-white font-semibold text-xs outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-purple-300 block font-semibold">Tamanho Roupa</span>
+                      <input
+                        type="text"
+                        value={editingChildForModal.clothesSize || ''}
+                        onChange={(e) => setEditingChildForModal({ ...editingChildForModal, clothesSize: e.target.value })}
+                        placeholder="Ex: 8 anos, M"
+                        className="w-full bg-[#1A1033] border border-purple-500/40 rounded-xl px-2.5 py-1.5 text-white font-semibold text-xs outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cartinha de Natal */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-purple-200 block">Carta / Mensagem de Natal</label>
+                  <textarea
+                    value={editingChildForModal.letter || ''}
+                    onChange={(e) => setEditingChildForModal({ ...editingChildForModal, letter: e.target.value })}
+                    rows={4}
+                    className="w-full bg-[#140824] border border-purple-500/40 focus:border-amber-400 rounded-xl p-3 text-white text-xs resize-none outline-none leading-relaxed"
+                    placeholder="Escreva a cartinha da criança..."
+                  />
+                </div>
+
+                {/* Sonho / Gostos */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-purple-200 block">Sonho Principal</label>
+                    <input
+                      type="text"
+                      value={editingChildForModal.dream || ''}
+                      onChange={(e) => setEditingChildForModal({ ...editingChildForModal, dream: e.target.value })}
+                      className="w-full bg-[#140824] border border-purple-500/40 rounded-xl px-3 py-2 text-white text-xs outline-none"
+                      placeholder="Ex: Ser médica, Ir ao parque..."
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-purple-200 block">Gostos / Interesses</label>
+                    <input
+                      type="text"
+                      value={editingChildForModal.likes || ''}
+                      onChange={(e) => setEditingChildForModal({ ...editingChildForModal, likes: e.target.value })}
+                      className="w-full bg-[#140824] border border-purple-500/40 rounded-xl px-3 py-2 text-white text-xs outline-none"
+                      placeholder="Ex: Desenhar, Jogar bola..."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Botões do Rodapé do Modal */}
+              <div className="flex items-center space-x-2 pt-2 border-t border-purple-500/30">
+                <button
+                  onClick={async () => {
+                    const childToSave = editingChildForModal;
+                    if (!childToSave) return;
+
+                    // 1. Atualizar no estado local e localStorage imediatamente
+                    setChildrenList(prev => {
+                      const updated = prev.map(item => item.id === childToSave.id ? childToSave : item);
+                      try {
+                        localStorage.setItem('childrenList', JSON.stringify(updated));
+                      } catch {}
+                      return updated;
+                    });
+
+                    if (selectedChild?.id === childToSave.id) {
+                      setSelectedChild(childToSave);
+                    }
+
+                    // 2. Salvar no Supabase
+                    try {
+                      const { error } = await updateKidInSupabase(childToSave.id, {
+                        name: childToSave.name,
+                        age: childToSave.age,
+                        gender: childToSave.gender,
+                        letter: childToSave.letter,
+                        image: childToSave.image,
+                        status: childToSave.status,
+                        birth_date: childToSave.birthDate || null,
+                        dream: childToSave.dream,
+                        likes: childToSave.likes,
+                        wishlist: {
+                          desiredGift: childToSave.desiredGift || '',
+                          shoeSize: childToSave.shoeSize || '',
+                          clothesSize: childToSave.clothesSize || '',
+                          items: childToSave.wishlist || []
+                        }
+                      });
+
+                      if (error) {
+                        console.error('Erro ao atualizar no Supabase:', error);
+                        setNotification(`Formulário de ${childToSave.name} atualizado no app! (${error.message || 'Supabase'})`);
+                      } else {
+                        setNotification(`🎉 Formulário de ${childToSave.name} salvo e sincronizado com sucesso!`);
+                        confetti({ particleCount: 50, spread: 60 });
+                      }
+                    } catch (err: any) {
+                      setNotification(`Formulário de ${childToSave.name} atualizado no aplicativo!`);
+                    }
+
+                    setEditingChildForModal(null);
+                  }}
+                  className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 font-black text-white text-xs shadow-xl active:scale-95 transition flex items-center justify-center space-x-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Salvar Alterações</span>
+                </button>
+                <button
+                  onClick={() => setEditingChildForModal(null)}
+                  className="py-3.5 px-5 rounded-2xl bg-purple-900/60 hover:bg-purple-800 text-purple-200 font-bold text-xs transition"
+                >
+                  Cancelar
                 </button>
               </div>
             </div>

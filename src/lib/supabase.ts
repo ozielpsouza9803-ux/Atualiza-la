@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+
 const DEFAULT_SUPABASE_URL = 'https://utrpckrchcbqgzbhvlzy.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
 
@@ -6,15 +7,15 @@ function getCleanSupabaseConfig() {
   const rawUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_URL)
     ? String(import.meta.env.VITE_SUPABASE_URL)
     : '';
-  const match = rawUrl.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
-  const cleanUrl = match ? match[0] : DEFAULT_SUPABASE_URL;
+  const matchUrl = rawUrl.trim().match(/https:\/\/[a-z0-9.-]+\.supabase\.co/i)?.[0] 
+    || rawUrl.trim().match(/https?:\/\/[^\s]+/)?.[0];
+  const cleanUrl = matchUrl || DEFAULT_SUPABASE_URL;
 
-  let anonKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY)
+  const rawKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY)
     ? String(import.meta.env.VITE_SUPABASE_ANON_KEY).trim()
     : '';
-  if (!anonKey || anonKey === 'SUPABASE_SERVICE_ROLE_KEY' || anonKey.length < 20 || (!anonKey.startsWith('sb_') && !anonKey.startsWith('eyJ'))) {
-    anonKey = DEFAULT_SUPABASE_ANON_KEY;
-  }
+  const anonKey = rawKey ? rawKey.split(/\s+/)[0] : DEFAULT_SUPABASE_ANON_KEY;
+
   return { cleanUrl, anonKey };
 }
 
@@ -118,7 +119,7 @@ export interface KidInput {
 }
 
 /**
- * Insere uma nova criança na tabela 'kids' do Supabase
+ * Insere uma nova criança na tabela 'kids' do Supabase via backend seguro
  */
 export async function createKidInSupabase(input: KidInput) {
   const targetFamilyId = (input.family_id && input.family_id.length === 36)
@@ -142,7 +143,6 @@ export async function createKidInSupabase(input: KidInput) {
     approved: input.approved !== undefined ? input.approved : true
   };
 
-  // 1. Tentar rota segura no backend primeiro (bypassa RLS e restrições de CORS)
   try {
     const apiRes = await fetch('/api/supabase/kids', {
       method: 'POST',
@@ -152,35 +152,22 @@ export async function createKidInSupabase(input: KidInput) {
       },
       body: JSON.stringify(row)
     });
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      if (json.data) {
-        return { data: json.data, error: null };
-      }
-    }
-  } catch (proxyErr) {
-    console.warn('Backend proxy kids insert note:', proxyErr);
-  }
 
-  // 2. Fallback via cliente Supabase direto
-  try {
-    const { data, error } = await supabase.from('kids').insert([row]).select();
-    if (!error && data && data.length > 0) {
-      return { data: data[0], error: null };
+    const json = await apiRes.json().catch(() => null);
+    if (apiRes.ok && json?.data) {
+      return { data: json.data, error: null };
     }
-    if (error) {
-      return { data: null, error };
+    if (json?.error) {
+      return { data: null, error: { message: json.error, code: json.code } };
     }
-  } catch (dirErr: any) {
-    console.warn('Direct Supabase insert error:', dirErr);
-    return { data: null, error: { message: dirErr?.message || 'Falha de conexão com o banco de dados' } };
+    return { data: null, error: { message: `Erro no servidor backend (${apiRes.status})` } };
+  } catch (proxyErr: any) {
+    return { data: null, error: { message: proxyErr?.message || 'Falha ao conectar com o servidor backend.' } };
   }
-
-  return { data: null, error: { message: 'Não foi possível salvar no banco de dados.' } };
 }
 
 /**
- * Atualiza os dados de uma criança existente
+ * Atualiza os dados de uma criança existente via backend seguro
  */
 export async function updateKidInSupabase(id: string, updates: Partial<KidInput>) {
   const row: Record<string, any> = {};
@@ -203,7 +190,6 @@ export async function updateKidInSupabase(id: string, updates: Partial<KidInput>
   if (updates.wishlist !== undefined) row.wishlist = updates.wishlist;
   if (updates.approved !== undefined) row.approved = updates.approved;
 
-  // 1. Tentar via backend proxy
   try {
     const apiRes = await fetch(`/api/supabase/kids/${id}`, {
       method: 'PUT',
@@ -213,74 +199,64 @@ export async function updateKidInSupabase(id: string, updates: Partial<KidInput>
       },
       body: JSON.stringify(row)
     });
-    if (apiRes.ok) {
-      const json = await apiRes.json();
+
+    const json = await apiRes.json().catch(() => null);
+    if (apiRes.ok && json?.data) {
       return { data: json.data, error: null };
     }
-  } catch {
-    // Prosseguir para cliente direto
+    if (json?.error) {
+      return { data: null, error: { message: json.error, code: json.code } };
+    }
+    return { data: null, error: { message: `Erro no servidor backend (${apiRes.status})` } };
+  } catch (err: any) {
+    return { data: null, error: { message: err?.message || 'Falha ao conectar com o servidor backend.' } };
   }
-
-  // 2. Cliente direto
-  const { data, error } = await supabase.from('kids').update(row).eq('id', id).select();
-  return { data: data?.[0] || null, error };
 }
 
 /**
- * Exclui uma criança na tabela 'kids'
+ * Exclui uma criança na tabela 'kids' via backend seguro
  */
 export async function deleteKidInSupabase(id: string) {
-  // 1. Tentar via backend proxy
   try {
     const apiRes = await fetch(`/api/supabase/kids/${id}`, {
       method: 'DELETE',
       headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
     });
+
+    const json = await apiRes.json().catch(() => null);
     if (apiRes.ok) {
       return { error: null };
     }
-  } catch {
-    // Prosseguir para cliente direto
-  }
-
-  // 2. Limpar presentes vinculados primeiro
-  try {
-    await supabase.from('gifts').delete().eq('kid_id', id);
-  } catch (giftErr) {
-    console.warn('Nota ao excluir presentes vinculados:', giftErr);
-  }
-
-  try {
-    const { error } = await supabase.from('kids').delete().eq('id', id);
-    return { error };
+    if (json?.error) {
+      return { error: { message: json.error } };
+    }
+    return { error: { message: `Erro no servidor backend (${apiRes.status})` } };
   } catch (err: any) {
-    console.warn('Delete kid handled:', err);
-    return { error: null };
+    return { error: { message: err?.message || 'Falha ao conectar com o servidor backend.' } };
   }
 }
 
+
 /**
- * Exclui um perfil na tabela 'profiles'
+ * Exclui um perfil na tabela 'profiles' via backend seguro
  */
 export async function deleteProfileInSupabase(id: string) {
-  // 1. Tentar via backend proxy
   try {
     const apiRes = await fetch(`/api/supabase/profiles/${id}`, {
       method: 'DELETE',
       headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
     });
+
+    const json = await apiRes.json().catch(() => null);
     if (apiRes.ok) {
       return { error: null };
     }
-  } catch {}
-
-  // 2. Cliente direto
-  try {
-    const { error } = await supabase.from('profiles').delete().eq('id', id);
-    return { error };
+    if (json?.error) {
+      return { error: { message: json.error } };
+    }
+    return { error: { message: `Erro no servidor backend (${apiRes.status})` } };
   } catch (err: any) {
-    console.warn('Delete profile handled:', err);
-    return { error: null };
+    return { error: { message: err?.message || 'Falha ao conectar com o servidor backend.' } };
   }
 }
 
@@ -297,7 +273,7 @@ export interface ProfileUpdateInput {
 }
 
 /**
- * Atualiza um perfil na tabela 'profiles'
+ * Atualiza um perfil na tabela 'profiles' via backend seguro
  */
 export async function updateProfileInSupabase(id: string, updates: ProfileUpdateInput) {
   const row: Record<string, any> = {
@@ -314,7 +290,6 @@ export async function updateProfileInSupabase(id: string, updates: ProfileUpdate
   if (updates.state !== undefined) row.state = updates.state;
   if (updates.postal_code !== undefined) row.postal_code = updates.postal_code;
 
-  // 1. Tentar via backend proxy
   try {
     const apiRes = await fetch(`/api/supabase/profiles/${id}`, {
       method: 'PUT',
@@ -324,23 +299,20 @@ export async function updateProfileInSupabase(id: string, updates: ProfileUpdate
       },
       body: JSON.stringify(row)
     });
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      return { data: json.data, error: null };
-    } else {
-      const errJson = await apiRes.json().catch(() => null);
-      if (errJson?.error) {
-        return { data: null, error: { message: errJson.error } };
-      }
-    }
-  } catch (err: any) {
-    // Prosseguir para cliente direto
-  }
 
-  // 2. Cliente direto
-  const { data, error } = await supabase.from('profiles').update(row).eq('id', id).select();
-  return { data: data?.[0] || null, error };
+    const json = await apiRes.json().catch(() => null);
+    if (apiRes.ok && json?.data) {
+      return { data: json.data, error: null };
+    }
+    if (json?.error) {
+      return { data: null, error: { message: json.error } };
+    }
+    return { data: null, error: { message: `Erro no servidor backend (${apiRes.status})` } };
+  } catch (err: any) {
+    return { data: null, error: { message: err?.message || 'Falha ao conectar com o servidor backend.' } };
+  }
 }
+
 
 export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -553,49 +525,29 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
  */
 export async function updateSiteSettingsInSupabase(slidesData: any) {
   try {
-    // 1. Tentar via backend proxy
-    try {
-      const apiRes = await fetch('/api/supabase/settings', {
-        method: 'PUT',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-secret': 'lar-esperanca-admin-secret'
-        },
-        body: JSON.stringify({ slides: slidesData })
-      });
-      if (apiRes.ok) {
-        const json = await apiRes.json();
-        return { data: json.data, error: null };
-      }
-    } catch {
-      // Prosseguir para cliente Supabase direto
+    const apiRes = await fetch('/api/supabase/settings', {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-admin-secret': 'lar-esperanca-admin-secret'
+      },
+      body: JSON.stringify({ slides: slidesData })
+    });
+    const json = await apiRes.json().catch(() => null);
+    if (apiRes.ok && json?.data) {
+      return { data: json.data, error: null };
     }
-
-    // 2. Fallback via cliente Supabase direto
-    const { data: existing } = await supabase.from('site_settings').select('id').limit(1);
-    const targetId = existing?.[0]?.id;
-
-    if (targetId) {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .update({ slides: slidesData, updated_at: new Date().toISOString() })
-        .eq('id', targetId)
-        .select();
-      return { data: data?.[0] || null, error };
-    } else {
-      const { data, error } = await supabase
-        .from('site_settings')
-        .insert({ slides: slidesData, updated_at: new Date().toISOString() })
-        .select();
-      return { data: data?.[0] || null, error };
+    if (json?.error) {
+      return { data: null, error: json.error };
     }
+    return { data: null, error: `Erro no servidor backend (${apiRes.status})` };
   } catch (err: any) {
     return { data: null, error: err?.message || 'Erro ao salvar configurações do site.' };
   }
 }
 
 /**
- * Cria um novo perfil na tabela 'profiles' do Supabase (para novos padrinhos ou famílias)
+ * Cria um novo perfil na tabela 'profiles' do Supabase via backend seguro
  */
 export async function createProfileInSupabase(input: { name: string; email?: string; phone?: string; bio?: string; role: string; photo_path?: string }) {
   const row = {
@@ -608,7 +560,6 @@ export async function createProfileInSupabase(input: { name: string; email?: str
     updated_at: new Date().toISOString()
   };
 
-  // 1. Tentar rota backend primeiro (bypassa RLS)
   try {
     const apiRes = await fetch('/api/supabase/profiles', {
       method: 'POST',
@@ -618,24 +569,19 @@ export async function createProfileInSupabase(input: { name: string; email?: str
       },
       body: JSON.stringify(row)
     });
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      if (json.data) {
-        return { data: json.data, error: null };
-      }
+    const json = await apiRes.json().catch(() => null);
+    if (apiRes.ok && json?.data) {
+      return { data: json.data, error: null };
     }
-  } catch (proxyErr) {
-    console.warn('Backend proxy profile insert note:', proxyErr);
-  }
-
-  // 2. Fallback via cliente Supabase direto
-  try {
-    const { data, error } = await supabase.from('profiles').insert([row]).select();
-    return { data: data?.[0] || null, error };
-  } catch (err: any) {
-    return { data: null, error: err };
+    if (json?.error) {
+      return { data: null, error: { message: json.error } };
+    }
+    return { data: null, error: { message: `Erro no servidor backend (${apiRes.status})` } };
+  } catch (proxyErr: any) {
+    return { data: null, error: { message: proxyErr?.message || 'Falha ao conectar com o servidor backend.' } };
   }
 }
+
 
 /**
  * Busca perfis na tabela 'profiles' filtrando por role ('sponsor' ou 'family') respeitando a RLS
