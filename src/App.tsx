@@ -865,7 +865,7 @@ export default function App() {
   });
 
   const [adminTab, setAdminTab] = useState<
-    'dashboard' | 'festive' | 'splash3d' | 'evangelical' | 'sponsors_families' | 'buttons' | 'media916' | 'carousel' | 'children' | 'pix' | 'gallery' | 'security' | 'settings' | 'social' | 'profile' | 'camera'
+    'dashboard' | 'festive' | 'splash3d' | 'evangelical' | 'padrinhos' | 'familias' | 'buttons' | 'media916' | 'carousel' | 'children' | 'pix' | 'gallery' | 'security' | 'settings' | 'social' | 'profile' | 'camera'
   >('dashboard');
   
   const [adminTitle, setAdminTitle] = useState<'Proprietária' | 'Proprietário' | 'Gestão'>(() => {
@@ -1016,6 +1016,8 @@ export default function App() {
 
   useEffect(() => {
     async function checkSupabase() {
+      console.log('DEBUG: env keys', Object.keys(import.meta.env));
+      console.log('DEBUG: VITE_SUPABASE_URL', import.meta.env.VITE_SUPABASE_URL);
       const tables = ['kids', 'profiles', 'gallery', 'site_settings'];
       const results: string[] = [];
       for (const table of tables) {
@@ -5240,13 +5242,13 @@ export default function App() {
                 </div>
               )}
 
-              {/* 4.5 GERENCIAR PADRINHOS & FAMÍLIAS (Com upload de foto da galeria e mensagens) */}
-              {adminTab === 'sponsors_families' && (
+              {/* GERENCIAR PADRINHOS (Com upload de foto da galeria e mensagens) */}
+              {adminTab === 'padrinhos' && (
                 <div className="space-y-4 text-xs">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-amber-300 text-sm flex items-center space-x-1.5">
                       <Users className="w-4 h-4 text-pink-400" />
-                      <span>Gerenciar Padrinhos & Famílias</span>
+                      <span>Gerenciar Padrinhos</span>
                     </h3>
                     <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
                   </div>
@@ -5327,6 +5329,19 @@ export default function App() {
                       Salvar Dados do Padrinho
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* GERENCIAR FAMÍLIAS (Com upload de foto da galeria e mensagens) */}
+              {adminTab === 'familias' && (
+                <div className="space-y-4 text-xs">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-bold text-amber-300 text-sm flex items-center space-x-1.5">
+                      <Users className="w-4 h-4 text-amber-400" />
+                      <span>Gerenciar Famílias</span>
+                    </h3>
+                    <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
+                  </div>
 
                   {/* Edição da Família pelo Administrador */}
                   <div className="bg-[#2A1840] p-4 rounded-2xl border border-amber-500/30 space-y-3 shadow">
@@ -5397,6 +5412,7 @@ export default function App() {
                   </div>
                 </div>
               )}
+
 
               {/* 4.6 GERENCIADOR DE BOTÕES */}
               {adminTab === 'buttons' && (
@@ -9912,16 +9928,29 @@ export default function App() {
                     </button>
 
                     <button 
-                      onClick={() => { setAdminTab('sponsors_families'); setIsAdminMenuOpen(false); }} 
-                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition active:scale-[0.98] ${adminTab === 'sponsors_families' ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold shadow-md' : 'bg-[#24153B] border-purple-500/25 text-purple-200 hover:border-pink-400/50'}`}
+                      onClick={() => { setAdminTab('padrinhos'); setIsAdminMenuOpen(false); }} 
+                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition active:scale-[0.98] ${adminTab === 'padrinhos' ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold shadow-md' : 'bg-[#24153B] border-purple-500/25 text-purple-200 hover:border-pink-400/50'}`}
                     >
                       <div className="flex items-center space-x-2.5 min-w-0">
                         <div className="p-1.5 rounded-xl bg-[#140824] text-pink-400 border border-white/5">
                           <Heart className="w-4 h-4" />
                         </div>
-                        <span className="truncate">Padrinhos & Famílias</span>
+                        <span className="truncate">Padrinhos</span>
                       </div>
                       <ChevronRight className="w-3.5 h-3.5 text-pink-400/60 shrink-0" />
+                    </button>
+
+                    <button 
+                      onClick={() => { setAdminTab('familias'); setIsAdminMenuOpen(false); }} 
+                      className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition active:scale-[0.98] ${adminTab === 'familias' ? 'bg-amber-500/25 border-amber-400 text-amber-200 font-bold shadow-md' : 'bg-[#24153B] border-purple-500/25 text-purple-200 hover:border-pink-400/50'}`}
+                    >
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <div className="p-1.5 rounded-xl bg-[#140824] text-pink-400 border border-white/5">
+                          <Users className="w-4 h-4" />
+                        </div>
+                        <span className="truncate">Famílias</span>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-purple-400/60 shrink-0" />
                     </button>
 
                     <button 

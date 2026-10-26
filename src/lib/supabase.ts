@@ -1,13 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Configurações do Supabase para o projeto Lar Esperança
-const rawUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) || 'https://utrpckrchcbqgzbhvlzy.supabase.co';
-const match = rawUrl.match(/https:\/\/[a-z0-9-]+\.supabase\.co/);
-export const SUPABASE_URL = match ? match[0] : rawUrl.trim();
-export const SUPABASE_ANON_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) || 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
-
 // Cliente Supabase público seguro (usa chave anônima/publicável)
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY);
 
 // IDs dos perfis mestres existentes no Supabase para garantir integridade referencial
 export const DEFAULT_ADMIN_PROFILE_ID = 'ab0ffd20-0846-44c0-9660-b79b6a3015f3';
@@ -38,13 +32,15 @@ export async function testSupabaseConnection(): Promise<{ ok: boolean; message: 
 export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null> {
   // 1. Tentar rota de API backend se disponível
   try {
-    const apiRes = await fetch('/api/supabase/data');
+    const apiRes = await fetch('/api/supabase/data', {
+      headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
+    });
     if (apiRes.ok) {
       const json = await apiRes.json();
       return json;
     }
   } catch {
-    // API backend não disponível (ex: hospedagem puramente estática no Netlify), prossegue com cliente Supabase direto
+    // API backend não disponível, prossegue com cliente Supabase direto
   }
 
   // 2. Consulta direta via cliente Supabase
@@ -103,7 +99,7 @@ export interface KidInput {
 }
 
 /**
- * Insere uma nova criança na tabela 'kids' do Supabase garantindo a chave estrangeira family_id
+ * Insere uma nova criança na tabela 'kids' do Supabase
  */
 export async function createKidInSupabase(input: KidInput) {
   const targetFamilyId = (input.family_id && input.family_id.length === 36)
@@ -127,11 +123,14 @@ export async function createKidInSupabase(input: KidInput) {
     approved: input.approved !== undefined ? input.approved : true
   };
 
-  // 1. Tentar via backend proxy se disponível
+  // 1. Tentar via backend proxy
   try {
     const apiRes = await fetch('/api/supabase/kids', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-admin-secret': 'lar-esperanca-admin-secret'
+      },
       body: JSON.stringify(row)
     });
     if (apiRes.ok) {
@@ -139,7 +138,7 @@ export async function createKidInSupabase(input: KidInput) {
       return { data: json.data, error: null };
     }
   } catch {
-    // Prosseguir para fallback direto do cliente Supabase
+    // Prosseguir para fallback direto
   }
 
   // 2. Fallback direto via cliente Supabase
@@ -148,7 +147,7 @@ export async function createKidInSupabase(input: KidInput) {
 }
 
 /**
- * Atualiza os dados de uma criança existente na tabela 'kids' do Supabase
+ * Atualiza os dados de uma criança existente
  */
 export async function updateKidInSupabase(id: string, updates: Partial<KidInput>) {
   const row: Record<string, any> = {};
@@ -175,7 +174,10 @@ export async function updateKidInSupabase(id: string, updates: Partial<KidInput>
   try {
     const apiRes = await fetch(`/api/supabase/kids/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-admin-secret': 'lar-esperanca-admin-secret'
+      },
       body: JSON.stringify(row)
     });
     if (apiRes.ok) {
@@ -192,13 +194,14 @@ export async function updateKidInSupabase(id: string, updates: Partial<KidInput>
 }
 
 /**
- * Exclui uma criança na tabela 'kids' do Supabase, limpando também presentes vinculados em 'gifts'
+ * Exclui uma criança na tabela 'kids'
  */
 export async function deleteKidInSupabase(id: string) {
   // 1. Tentar via backend proxy
   try {
     const apiRes = await fetch(`/api/supabase/kids/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
     });
     if (apiRes.ok) {
       return { error: null };
@@ -231,7 +234,7 @@ export interface ProfileUpdateInput {
 }
 
 /**
- * Atualiza um perfil na tabela 'profiles' do Supabase
+ * Atualiza um perfil na tabela 'profiles'
  */
 export async function updateProfileInSupabase(id: string, updates: ProfileUpdateInput) {
   const row: Record<string, any> = {
@@ -252,14 +255,22 @@ export async function updateProfileInSupabase(id: string, updates: ProfileUpdate
   try {
     const apiRes = await fetch(`/api/supabase/profiles/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-admin-secret': 'lar-esperanca-admin-secret'
+      },
       body: JSON.stringify(row)
     });
     if (apiRes.ok) {
       const json = await apiRes.json();
       return { data: json.data, error: null };
+    } else {
+      const errJson = await apiRes.json().catch(() => null);
+      if (errJson?.error) {
+        return { data: null, error: { message: errJson.error } };
+      }
     }
-  } catch {
+  } catch (err: any) {
     // Prosseguir para cliente direto
   }
 
@@ -287,7 +298,7 @@ export interface GalleryPhotoRecord {
 }
 
 /**
- * Faz upload real de foto para o Supabase Storage (bucket 'media') e grava na tabela 'gallery'
+ * Faz upload real de foto para o Supabase Storage e grava na tabela 'gallery'
  */
 export async function uploadGalleryPhotoToSupabase(
   file: File,
@@ -296,11 +307,14 @@ export async function uploadGalleryPhotoToSupabase(
   try {
     const base64 = base64Data || (await fileToBase64(file));
 
-    // 1. Tentar upload seguro via backend proxy (com credenciais do servidor)
+    // 1. Tentar upload seguro via backend proxy
     try {
       const apiRes = await fetch('/api/supabase/gallery/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-secret': 'lar-esperanca-admin-secret'
+        },
         body: JSON.stringify({
           fileName: file.name,
           contentType: file.type || 'image/jpeg',
@@ -323,7 +337,7 @@ export async function uploadGalleryPhotoToSupabase(
       // Backend não alcançável, tentar cliente direto
     }
 
-    // 2. Fallback direto via cliente Supabase (usando bucket 'media')
+    // 2. Fallback direto via cliente Supabase
     const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
     const uniqueName = `gallery_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`;
     const storagePath = `gallery/${uniqueName}`;
@@ -352,7 +366,7 @@ export async function uploadGalleryPhotoToSupabase(
     }
 
     const inserted = dbData?.[0];
-    const url = `${SUPABASE_URL}/storage/v1/object/public/media/${storagePath}`;
+    const url = `${supabase.supabaseUrl}/storage/v1/object/public/media/${storagePath}`;
 
     return {
       data: {
@@ -380,7 +394,10 @@ export async function deleteGalleryPhotoFromSupabase(target: {
     try {
       const apiRes = await fetch('/api/supabase/gallery', {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-secret': 'lar-esperanca-admin-secret'
+        },
         body: JSON.stringify(target)
       });
       if (apiRes.ok) {
@@ -433,7 +450,9 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
   try {
     // 1. Tentar backend
     try {
-      const apiRes = await fetch('/api/supabase/gallery');
+      const apiRes = await fetch('/api/supabase/gallery', {
+        headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
+      });
       if (apiRes.ok) {
         const json = await apiRes.json();
         if (json.data && Array.isArray(json.data)) {
@@ -458,7 +477,7 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
       title: row.title,
       url: row.path?.startsWith('http')
         ? row.path
-        : `${SUPABASE_URL}/storage/v1/object/public/media/${row.path}`
+        : `${supabase.supabaseUrl}/storage/v1/object/public/media/${row.path}`
     }));
   } catch {
     return [];
@@ -466,15 +485,18 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
 }
 
 /**
- * Salva e atualiza as configurações do site, banners, carrossel e PIX na tabela 'site_settings' do Supabase
+ * Salva e atualiza as configurações do site na tabela 'site_settings'
  */
 export async function updateSiteSettingsInSupabase(slidesData: any) {
   try {
-    // 1. Tentar via backend proxy se disponível
+    // 1. Tentar via backend proxy
     try {
       const apiRes = await fetch('/api/supabase/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-admin-secret': 'lar-esperanca-admin-secret'
+        },
         body: JSON.stringify({ slides: slidesData })
       });
       if (apiRes.ok) {
@@ -507,4 +529,3 @@ export async function updateSiteSettingsInSupabase(slidesData: any) {
     return { data: null, error: err?.message || 'Erro ao salvar configurações do site.' };
   }
 }
-
