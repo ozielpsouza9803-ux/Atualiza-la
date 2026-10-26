@@ -68,6 +68,9 @@ interface Child {
   sponsorId?: string;
   familyEmail?: string;
   birthDate?: string;
+  desiredGift?: string;
+  shoeSize?: string;
+  clothesSize?: string;
 }
 
 interface LocalAppNotification {
@@ -499,7 +502,16 @@ function playFireworkBoom() {
 }
 
 export default function App() {
-  const [currentScreenIndex, setCurrentScreenIndex] = useState(0); 
+  const [currentScreenIndex, setCurrentScreenIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('currentScreenIndex');
+      if (saved !== null) {
+        const num = Number(saved);
+        if (!isNaN(num)) return num;
+      }
+    } catch {}
+    return 0;
+  }); 
 
   // CADASTRO E AUTENTICAÇÃO DA FAMÍLIA (Separado com persistência real)
   const [familyUser, setFamilyUser] = useState<UserProfile>(() => {
@@ -962,7 +974,40 @@ export default function App() {
   const [showAdminPasswordInSettings, setShowAdminPasswordInSettings] = useState(false);
   const [securityPinInput, setSecurityPinInput] = useState('');
   const [securityModalTargetTab, setSecurityModalTargetTab] = useState<any>('dashboard');
-  const [isSafePanelUnlocked, setIsSafePanelUnlocked] = useState(false);
+  const [isSafePanelUnlocked, setIsSafePanelUnlocked] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('isSafePanelUnlocked') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const handleAdminLogout = () => {
+    setIsSafePanelUnlocked(false);
+    try {
+      localStorage.setItem('isSafePanelUnlocked', 'false');
+    } catch {}
+    setCurrentScreenIndex(0);
+    setNotification('Sessão do painel encerrada. Painel bloqueado!');
+  };
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('isSafePanelUnlocked', isSafePanelUnlocked ? 'true' : 'false');
+    } catch {}
+  }, [isSafePanelUnlocked]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('currentScreenIndex', String(currentScreenIndex));
+    } catch {}
+  }, [currentScreenIndex]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('adminTab', String(adminTab));
+    } catch {}
+  }, [adminTab]);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isLockedOut, setIsLockedOut] = useState(false);
   const [lockoutTime, setLockoutTime] = useState<number | null>(null);
@@ -1195,6 +1240,9 @@ export default function App() {
   const [newChildBirthDate, setNewChildBirthDate] = useState('2016-01-01');
   const [newChildLetter, setNewChildLetter] = useState('');
   const [newChildImage, setNewChildImage] = useState('https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop');
+  const [newChildDesiredGift, setNewChildDesiredGift] = useState('');
+  const [newChildShoeSize, setNewChildShoeSize] = useState('');
+  const [newChildClothesSize, setNewChildClothesSize] = useState('');
 
   const calculateAge = (birthDateStr: string): number => {
     if (!birthDateStr) return 8;
@@ -1211,17 +1259,19 @@ export default function App() {
     const birth = new Date(birthDate);
     if (isNaN(birth.getTime())) return `${ageNum !== undefined ? ageNum : 8} anos`;
     const now = new Date();
-    const diffTime = now.getTime() - birth.getTime();
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return 'Recém-nascido';
-    if (diffDays <= 7) return 'Recém-nascido';
+    const diffDays = Math.floor((now.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0 || diffDays <= 7) return 'Recém-nascido';
     if (diffDays < 30) return `${diffDays} dias`;
     const diffMonths = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
     if (diffMonths < 12) {
       return `${diffMonths} ${diffMonths === 1 ? 'mês' : 'meses'}`;
     }
     const years = Math.floor(diffMonths / 12);
-    return `${years} ${years === 1 ? 'ano' : 'anos'}`;
+    const months = diffMonths % 12;
+    if (months === 0) {
+      return `${years} ${years === 1 ? 'ano' : 'anos'}`;
+    }
+    return `${years} ${years === 1 ? 'ano' : 'anos'} e ${months} ${months === 1 ? 'mês' : 'meses'}`;
   };
   const [galleryActivitiesMsg, setGalleryActivitiesMsg] = useState(() => {
     try {
@@ -1249,12 +1299,18 @@ export default function App() {
           const kGifts = (data.gifts || []).filter((g: any) => g.kid_id === k.id);
           const isSponsored = kGifts.some((g: any) => g.sponsor_id || g.status === 1);
           const parsedAge = parseInt(k.age);
+
+          const wishlistObj = (k.wishlist && typeof k.wishlist === 'object' && !Array.isArray(k.wishlist)) ? k.wishlist : {};
+          const desiredGift = wishlistObj.desiredGift || k.wishlist?.desiredGift || (Array.isArray(k.wishlist) ? k.wishlist[0]?.name : '');
+          const shoeSize = wishlistObj.shoeSize || k.wishlist?.shoeSize || '';
+          const clothesSize = wishlistObj.clothesSize || k.wishlist?.clothesSize || '';
+
           const wishlist = kGifts.length > 0 
             ? kGifts.map((g: any) => ({
                 name: [g.type, g.description, g.size ? `(${g.size})` : ''].filter(Boolean).join(' - ') || 'Presente de Natal',
                 price: 80
               }))
-            : [{ name: 'Roupa ou Brinquedo', price: 80 }];
+            : [{ name: desiredGift || 'Roupa ou Brinquedo', price: 80 }];
 
           const photoUrl = k.photo_path 
             ? (k.photo_path.startsWith('http') 
@@ -1275,7 +1331,10 @@ export default function App() {
             image: photoUrl,
             letter: k.letter || 'Querido Papai Noel, gostaria de ter um Natal muito feliz!',
             birthDate: k.birth_date || undefined,
-            wishlist
+            wishlist,
+            desiredGift: desiredGift || '',
+            shoeSize: shoeSize || '',
+            clothesSize: clothesSize || ''
           };
         });
         setChildrenList(mappedKids);
@@ -2567,24 +2626,29 @@ export default function App() {
   }, []);
 
   const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files[0]) {
-      const url = await processMediaFile(files[0]);
-      const newSlide: BannerSlide = {
-        id: Date.now().toString(),
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    const files = Array.from(fileList);
+    setNotification(`Processando ${files.length} foto(s) para o carrossel...`);
+    const newSlides: BannerSlide[] = [];
+    for (let i = 0; i < files.length; i++) {
+      const url = await processMediaFile(files[i]);
+      newSlides.push({
+        id: (Date.now() + i).toString(),
         image: url,
-        title: newBannerTitle || 'Novo Destaque Lar Esperança',
+        title: newBannerTitle || `Destaque Lar Esperança ${banners.length + i + 1}`,
         subtitle: newBannerSubtitle || 'Amor e acolhimento para nossas crianças.',
         badge: newBannerBadge || 'Destaque'
-      };
-      const updatedBanners = [newSlide, ...banners];
-      setBanners(updatedBanners);
-      await persistSiteSettingsToSupabase(updatedBanners);
-      setNewBannerTitle('');
-      setNewBannerSubtitle('');
-      setNotification('Nova foto adicionada ao carrossel e salva no Supabase!');
-      confetti({ particleCount: 40, spread: 50 });
+      });
     }
+    const updatedBanners = [...newSlides, ...banners];
+    setBanners(updatedBanners);
+    await persistSiteSettingsToSupabase(updatedBanners);
+    setNewBannerTitle('');
+    setNewBannerSubtitle('');
+    setNotification(`🎉 ${newSlides.length} foto(s) adicionada(s) ao carrossel e salva(s) no Supabase!`);
+    confetti({ particleCount: 40, spread: 50 });
+    e.target.value = '';
   };
 
   const handleAdminAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -5562,7 +5626,7 @@ export default function App() {
                           <span>+ Subir Foto da Galeria</span>
                         </label>
                       </div>
-                      <input id="banner-upload" type="file" accept="image/*" onChange={handleBannerUpload} className="hidden" />
+                      <input id="banner-upload" type="file" multiple accept="image/*" onChange={handleBannerUpload} className="hidden" />
                     </div>
 
                     <div className="pt-3 border-t border-purple-900/50 space-y-2">
@@ -6383,6 +6447,37 @@ export default function App() {
                           className="hidden" 
                         />
                       </div>
+                      {/* Presente Desejado, Tamanho do Calçado e Vestuário */}
+                      <div className="space-y-2 pt-1 border-t border-purple-900/40">
+                        <label className="text-[11px] font-bold text-amber-300 flex items-center space-x-1">
+                          <Gift className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Presente Desejado & Tamanhos (Calçado e Roupa)</span>
+                        </label>
+                        <input 
+                          type="text" 
+                          placeholder="Presente Desejado (Ex: Bola de futebol, Boneca, Bicicleta...)" 
+                          value={newChildDesiredGift} 
+                          onChange={(e) => setNewChildDesiredGift(e.target.value)} 
+                          className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs font-semibold" 
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input 
+                            type="text" 
+                            placeholder="Tamanho Calçado (Ex: 32, 28...)" 
+                            value={newChildShoeSize} 
+                            onChange={(e) => setNewChildShoeSize(e.target.value)} 
+                            className="bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
+                          />
+                          <input 
+                            type="text" 
+                            placeholder="Tamanho Roupa (Ex: 8, 10, P, M...)" 
+                            value={newChildClothesSize} 
+                            onChange={(e) => setNewChildClothesSize(e.target.value)} 
+                            className="bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
+                          />
+                        </div>
+                      </div>
+
                       <textarea 
                         placeholder="Carta com os desejos da criança..." 
                         value={newChildLetter} 
@@ -6403,13 +6498,18 @@ export default function App() {
                             birth_date: newChildBirthDate || null,
                             gender: 'Infantil',
                             status: 'Aguardando Apadrinhamento',
-                            likes: 'brinquedos, escola',
-                            dream: 'ser feliz',
+                            likes: newChildDesiredGift || 'brinquedos, escola',
+                            dream: newChildDesiredGift || 'ser feliz',
                             address: 'Lar Esperança',
                             image: newChildImage,
                             photo_path: newChildImage,
                             letter: newChildLetter.trim() || 'Quero muito um presente especial de Natal!',
-                            wishlist: [{ name: 'Brinquedo', price: 79.90 }],
+                            wishlist: {
+                              desiredGift: newChildDesiredGift.trim(),
+                              shoeSize: newChildShoeSize.trim(),
+                              clothesSize: newChildClothesSize.trim(),
+                              items: [{ name: newChildDesiredGift.trim() || 'Brinquedo', price: 79.90 }]
+                            },
                             approved: true
                           };
 
@@ -6438,7 +6538,10 @@ export default function App() {
                             address: data.address || 'Lar Esperança',
                             image: data.image || data.photo_path || newChildImage,
                             letter: data.letter || newChildLetter || 'Quero muito um presente especial!',
-                            wishlist: [{ name: 'Brinquedo', price: 79.90 }]
+                            wishlist: [{ name: newChildDesiredGift.trim() || 'Brinquedo', price: 79.90 }],
+                            desiredGift: newChildDesiredGift.trim(),
+                            shoeSize: newChildShoeSize.trim(),
+                            clothesSize: newChildClothesSize.trim()
                           };
 
                           const updatedList = [...childrenList, createdKid];
@@ -6460,6 +6563,9 @@ export default function App() {
 
                           setNewChildName('');
                           setNewChildLetter('');
+                          setNewChildDesiredGift('');
+                          setNewChildShoeSize('');
+                          setNewChildClothesSize('');
                           setNotification(`Criança "${newChildName}" cadastrada com sucesso no Supabase!`);
                           confetti({ particleCount: 50, spread: 50 });
                         }}
@@ -6553,35 +6659,89 @@ export default function App() {
                             />
                           </div>
 
-                          {/* Idade e Situação em colunas organizadas */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-purple-300">Idade (anos)</label>
-                              <input 
-                                type="number" 
-                                value={c.age} 
-                                onChange={(e) => {
-                                  const updated = [...childrenList];
-                                  updated[idx].age = Number(e.target.value);
-                                  setChildrenList(updated);
-                                }}
-                                className="w-full bg-[#130822] border border-purple-500/40 focus:border-amber-400 rounded-xl px-2.5 py-1.5 text-white font-bold text-xs text-center outline-none transition shadow-inner"
-                              />
+                          {/* Data de Nascimento, Idade e Situação */}
+                          <div className="space-y-1">
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[10px] font-bold text-purple-300 block">Data Nascimento</label>
+                                <input 
+                                  type="date" 
+                                  value={c.birthDate || ''} 
+                                  onChange={(e) => {
+                                    const updated = [...childrenList];
+                                    updated[idx].birthDate = e.target.value;
+                                    if (e.target.value) {
+                                      updated[idx].age = calculateAge(e.target.value);
+                                    }
+                                    setChildrenList(updated);
+                                  }}
+                                  className="w-full bg-[#130822] border border-purple-500/40 focus:border-amber-400 rounded-xl px-2 py-1 text-white text-[11px] outline-none"
+                                />
+                              </div>
+                              <div>
+                                <label className="text-[10px] font-bold text-purple-300 block">Situação</label>
+                                <select
+                                  value={c.status}
+                                  onChange={(e) => {
+                                    const updated = [...childrenList];
+                                    updated[idx].status = e.target.value as any;
+                                    setChildrenList(updated);
+                                  }}
+                                  className="w-full bg-[#130822] border border-purple-500/40 focus:border-pink-500 rounded-xl px-2 py-1 text-white text-[11px] font-semibold outline-none"
+                                >
+                                  <option value="Aguardando Apadrinhamento">Aguardando</option>
+                                  <option value="Apadrinhado">Apadrinhado</option>
+                                </select>
+                              </div>
                             </div>
-                            <div className="space-y-1">
-                              <label className="text-[10px] font-bold text-purple-300">Situação</label>
-                              <select
-                                value={c.status}
+                            <div className="text-[10px] text-pink-300 font-bold flex items-center justify-between pt-0.5 px-0.5">
+                              <span>Exibição de Idade:</span>
+                              <span className="text-amber-300 bg-purple-900/60 px-2 py-0.5 rounded-md border border-purple-500/30">
+                                {getAgeDisplay(c.birthDate, c.age)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Presente Desejado, Calçado e Vestuário */}
+                          <div className="space-y-1.5 pt-1 border-t border-purple-900/40">
+                            <label className="text-[10px] font-bold text-amber-300 flex items-center space-x-1">
+                              <Gift className="w-3 h-3 text-amber-400" />
+                              <span>Presente Desejado & Tamanhos</span>
+                            </label>
+                            <input 
+                              type="text" 
+                              value={c.desiredGift || ''} 
+                              onChange={(e) => {
+                                const updated = [...childrenList];
+                                updated[idx].desiredGift = e.target.value;
+                                setChildrenList(updated);
+                              }}
+                              placeholder="Presente Desejado (ex: Boneca, Bola...)" 
+                              className="w-full bg-[#130822] border border-purple-500/40 focus:border-amber-400 rounded-xl px-2.5 py-1.5 text-white font-semibold text-xs outline-none"
+                            />
+                            <div className="grid grid-cols-2 gap-2">
+                              <input 
+                                type="text" 
+                                value={c.shoeSize || ''} 
                                 onChange={(e) => {
                                   const updated = [...childrenList];
-                                  updated[idx].status = e.target.value as any;
+                                  updated[idx].shoeSize = e.target.value;
                                   setChildrenList(updated);
                                 }}
-                                className="w-full bg-[#130822] border border-purple-500/40 focus:border-pink-500 rounded-xl px-2 py-1.5 text-white text-[11px] font-semibold outline-none transition shadow-inner"
-                              >
-                                <option value="Aguardando Apadrinhamento">Aguardando</option>
-                                <option value="Apadrinhado">Apadrinhado</option>
-                              </select>
+                                placeholder="Calçado (ex: 32)" 
+                                className="w-full bg-[#130822] border border-purple-500/40 focus:border-amber-400 rounded-xl px-2.5 py-1 text-white text-[11px] outline-none"
+                              />
+                              <input 
+                                type="text" 
+                                value={c.clothesSize || ''} 
+                                onChange={(e) => {
+                                  const updated = [...childrenList];
+                                  updated[idx].clothesSize = e.target.value;
+                                  setChildrenList(updated);
+                                }}
+                                placeholder="Roupa (ex: 8, M)" 
+                                className="w-full bg-[#130822] border border-purple-500/40 focus:border-amber-400 rounded-xl px-2.5 py-1 text-white text-[11px] outline-none"
+                              />
                             </div>
                           </div>
 
@@ -6613,7 +6773,14 @@ export default function App() {
                                   age: c.age, 
                                   letter: c.letter,
                                   image: c.image,
-                                  status: c.status
+                                  status: c.status,
+                                  birth_date: c.birthDate || null,
+                                  wishlist: {
+                                    desiredGift: c.desiredGift || '',
+                                    shoeSize: c.shoeSize || '',
+                                    clothesSize: c.clothesSize || '',
+                                    items: c.wishlist || []
+                                  }
                                 });
 
                                 if (error) {
@@ -8648,6 +8815,40 @@ export default function App() {
               </div>
 
               <div className="space-y-3 bg-[#2A1840] p-4 rounded-3xl border border-purple-500/30 text-xs shadow">
+                <div className="flex justify-between items-center pb-2 border-b border-purple-900/40">
+                  <div>
+                    <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block">Idade</span>
+                    <p className="text-sm font-bold text-white">{getAgeDisplay(selectedChild.birthDate, selectedChild.age)}</p>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${selectedChild.status === 'Apadrinhado' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}`}>
+                    {selectedChild.status}
+                  </span>
+                </div>
+
+                {selectedChild.desiredGift && (
+                  <div>
+                    <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider block">Presente Desejado</span>
+                    <p className="text-sm font-black text-amber-300">🎁 {selectedChild.desiredGift}</p>
+                  </div>
+                )}
+
+                {(selectedChild.shoeSize || selectedChild.clothesSize) && (
+                  <div className="grid grid-cols-2 gap-2 pt-1 border-t border-purple-900/40">
+                    {selectedChild.shoeSize && (
+                      <div className="p-2 rounded-xl bg-[#1A1033] border border-purple-500/20">
+                        <span className="text-[9px] text-purple-300 block uppercase font-bold">Calçado</span>
+                        <span className="text-xs font-bold text-white">Nº {selectedChild.shoeSize}</span>
+                      </div>
+                    )}
+                    {selectedChild.clothesSize && (
+                      <div className="p-2 rounded-xl bg-[#1A1033] border border-purple-500/20">
+                        <span className="text-[9px] text-purple-300 block uppercase font-bold">Vestuário / Roupa</span>
+                        <span className="text-xs font-bold text-white">Tam {selectedChild.clothesSize}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <div>
                   <span className="text-[10px] text-pink-400 font-bold uppercase tracking-wider block">Sonho</span>
                   <p className="text-sm font-bold text-white">{selectedChild.dream}</p>
