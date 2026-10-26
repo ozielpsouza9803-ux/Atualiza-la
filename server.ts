@@ -62,6 +62,9 @@ async function startServer() {
   app.get('/api/supabase/data', async (req, res) => {
     try {
       const client = serverSupabase || supabase;
+      if (!client) {
+        return res.status(500).json({ error: 'Supabase client not configured' });
+      }
       const [kidsRes, giftsRes, settingsRes, galleryRes, profilesRes] = await Promise.all([
         client.from('kids').select('*').order('created_at', { ascending: true }),
         client.from('gifts').select('*'),
@@ -87,6 +90,9 @@ async function startServer() {
   app.get('/api/supabase/gallery', async (req, res) => {
     try {
       const client = serverSupabase || supabase;
+      if (!client) {
+        return res.status(500).json({ error: 'Supabase client not configured' });
+      }
       const { data, error } = await client
         .from('gallery')
         .select('*')
@@ -246,13 +252,20 @@ async function startServer() {
   app.post('/api/supabase/kids', authorizeAdmin, async (req, res) => {
     try {
       const row = req.body;
-      const client = serverSupabase;
+      const client = serverSupabase || supabase;
       if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
-      const { data, error } = await client.from('kids').insert([row]).select();
-      if (error) {
-        return res.status(400).json({ error: error.message, code: error.code });
+      
+      let insertRes = await client.from('kids').insert([row]).select();
+      if (insertRes.error && insertRes.error.message?.includes('image') && row.image) {
+        // Se a coluna 'image' não existir na tabela (usando apenas photo_path), retenta sem ela
+        const sanitized = { ...row };
+        delete sanitized.image;
+        insertRes = await client.from('kids').insert([sanitized]).select();
       }
-      res.status(201).json({ data: data?.[0] || null });
+      if (insertRes.error) {
+        return res.status(400).json({ error: insertRes.error.message, code: insertRes.error.code });
+      }
+      res.status(201).json({ data: insertRes.data?.[0] || null });
     } catch (err: any) {
       res.status(500).json({ error: err?.message || 'Internal error' });
     }
@@ -262,7 +275,7 @@ async function startServer() {
     try {
       const { id } = req.params;
       const updates = req.body;
-      const client = serverSupabase;
+      const client = serverSupabase || supabase;
       if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
       const { data, error } = await client.from('kids').update(updates).eq('id', id).select();
       if (error) {
@@ -277,7 +290,7 @@ async function startServer() {
   app.delete('/api/supabase/kids/:id', authorizeAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      const client = serverSupabase;
+      const client = serverSupabase || supabase;
       if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
       await client.from('gifts').delete().eq('kid_id', id);
       const { error } = await client.from('kids').delete().eq('id', id);
@@ -290,6 +303,24 @@ async function startServer() {
     }
   });
 
+  app.post('/api/supabase/profiles', authorizeAdmin, async (req, res) => {
+    try {
+      const row = {
+        ...req.body,
+        updated_at: new Date().toISOString()
+      };
+      const client = serverSupabase || supabase;
+      if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
+      const { data, error } = await client.from('profiles').insert([row]).select();
+      if (error) {
+        return res.status(400).json({ error: error.message, code: error.code });
+      }
+      res.status(201).json({ data: data?.[0] || null });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message || 'Internal error' });
+    }
+  });
+
   app.put('/api/supabase/profiles/:id', authorizeAdmin, async (req, res) => {
     try {
       const { id } = req.params;
@@ -297,7 +328,7 @@ async function startServer() {
         ...req.body,
         updated_at: new Date().toISOString()
       };
-      const client = serverSupabase;
+      const client = serverSupabase || supabase;
       if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
       const { data, error } = await client.from('profiles').update(updates).eq('id', id).select();
       if (error) {

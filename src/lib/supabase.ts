@@ -123,17 +123,7 @@ export async function createKidInSupabase(input: KidInput) {
     approved: input.approved !== undefined ? input.approved : true
   };
 
-  // 1. Tentar cliente Supabase direto primeiro (evita Failed to fetch se proxy demorar)
-  try {
-    const { data, error } = await supabase.from('kids').insert([row]).select();
-    if (!error && data && data.length > 0) {
-      return { data: data[0], error: null };
-    }
-  } catch (dirErr) {
-    console.warn('Direct Supabase insert note:', dirErr);
-  }
-
-  // 2. Fallback via backend proxy
+  // 1. Tentar rota segura no backend primeiro (bypassa RLS e restrições de CORS)
   try {
     const apiRes = await fetch('/api/supabase/kids', {
       method: 'POST',
@@ -145,16 +135,29 @@ export async function createKidInSupabase(input: KidInput) {
     });
     if (apiRes.ok) {
       const json = await apiRes.json();
-      return { data: json.data, error: null };
-    } else {
-      const errJson = await apiRes.json().catch(() => null);
-      return { data: null, error: errJson?.error || 'Erro ao cadastrar criança no servidor.' };
+      if (json.data) {
+        return { data: json.data, error: null };
+      }
     }
-  } catch (err: any) {
-    // 3. Última tentativa direta com erro explícito se falhar
-    const { data, error } = await supabase.from('kids').insert([row]).select();
-    return { data: data?.[0] || null, error };
+  } catch (proxyErr) {
+    console.warn('Backend proxy kids insert note:', proxyErr);
   }
+
+  // 2. Fallback via cliente Supabase direto
+  try {
+    const { data, error } = await supabase.from('kids').insert([row]).select();
+    if (!error && data && data.length > 0) {
+      return { data: data[0], error: null };
+    }
+    if (error) {
+      return { data: null, error };
+    }
+  } catch (dirErr: any) {
+    console.warn('Direct Supabase insert error:', dirErr);
+    return { data: null, error: { message: dirErr?.message || 'Falha de conexão com o banco de dados' } };
+  }
+
+  return { data: null, error: { message: 'Não foi possível salvar no banco de dados.' } };
 }
 
 /**
@@ -366,7 +369,7 @@ export async function uploadGalleryPhotoToSupabase(
           .select();
 
         const inserted = dbData?.[0];
-        const url = `${supabase.supabaseUrl}/storage/v1/object/public/media/${storagePath}`;
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/media/${storagePath}`;
 
         return {
           data: {
@@ -489,7 +492,7 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
       title: row.title,
       url: row.path?.startsWith('http') || row.path?.startsWith('data:')
         ? row.path
-        : `${supabase.supabaseUrl}/storage/v1/object/public/media/${row.path}`
+        : `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/media/${row.path}`
     }));
   } catch {
     return [];
@@ -546,16 +549,38 @@ export async function updateSiteSettingsInSupabase(slidesData: any) {
  * Cria um novo perfil na tabela 'profiles' do Supabase (para novos padrinhos ou famílias)
  */
 export async function createProfileInSupabase(input: { name: string; email?: string; phone?: string; bio?: string; role: string; photo_path?: string }) {
+  const row = {
+    name: input.name.trim(),
+    email: input.email || null,
+    phone: input.phone || null,
+    bio: input.bio || null,
+    role: input.role,
+    photo_path: input.photo_path || null,
+    updated_at: new Date().toISOString()
+  };
+
+  // 1. Tentar rota backend primeiro (bypassa RLS)
   try {
-    const row = {
-      name: input.name.trim(),
-      email: input.email || null,
-      phone: input.phone || null,
-      bio: input.bio || null,
-      role: input.role,
-      photo_path: input.photo_path || null,
-      updated_at: new Date().toISOString()
-    };
+    const apiRes = await fetch('/api/supabase/profiles', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-secret': 'lar-esperanca-admin-secret'
+      },
+      body: JSON.stringify(row)
+    });
+    if (apiRes.ok) {
+      const json = await apiRes.json();
+      if (json.data) {
+        return { data: json.data, error: null };
+      }
+    }
+  } catch (proxyErr) {
+    console.warn('Backend proxy profile insert note:', proxyErr);
+  }
+
+  // 2. Fallback via cliente Supabase direto
+  try {
     const { data, error } = await supabase.from('profiles').insert([row]).select();
     return { data: data?.[0] || null, error };
   } catch (err: any) {

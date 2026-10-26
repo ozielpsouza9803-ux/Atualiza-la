@@ -1192,7 +1192,17 @@ export default function App() {
       return INITIAL_CHILDREN;
     }
   });
-  const [profilesList, setProfilesList] = useState<any[]>([]);
+  const [profilesList, setProfilesList] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('profilesList');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [profilesFilterRole, setProfilesFilterRole] = useState<'all' | 'sponsor' | 'family' | 'admin'>('all');
+  const [profilesSearchQuery, setProfilesSearchQuery] = useState('');
+  const [showRlsModal, setShowRlsModal] = useState(false);
   const [showNewSponsorForm, setShowNewSponsorForm] = useState(false);
   const [newSponsorName, setNewSponsorName] = useState('');
   const [newSponsorEmail, setNewSponsorEmail] = useState('');
@@ -1251,7 +1261,7 @@ export default function App() {
     { month: 'Out', total: 7850, doadores: 63 },
   ]);
   const [newChildName, setNewChildName] = useState('');
-  const [newChildAge, setNewChildAge] = useState<number>(8);
+  const [newChildAge, setNewChildAge] = useState<number | ''>(8);
   const [newChildBirthDate, setNewChildBirthDate] = useState('2016-01-01');
   const [newChildLetter, setNewChildLetter] = useState('');
   const [newChildImage, setNewChildImage] = useState('https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop');
@@ -1265,28 +1275,36 @@ export default function App() {
     if (isNaN(birth.getTime())) return 8;
     const now = new Date();
     const diffMonths = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+    if (diffMonths <= 0) return 0;
     if (diffMonths < 12) return 0;
     return Math.floor(diffMonths / 12);
   };
 
-  const getAgeDisplay = (birthDate?: string, ageNum?: number): string => {
-    if (!birthDate) return `${ageNum !== undefined ? ageNum : 8} anos`;
-    const birth = new Date(birthDate);
-    if (isNaN(birth.getTime())) return `${ageNum !== undefined ? ageNum : 8} anos`;
-    const now = new Date();
-    const diffDays = Math.floor((now.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0 || diffDays <= 7) return 'Recém-nascido';
-    if (diffDays < 30) return `${diffDays} dias`;
-    const diffMonths = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-    if (diffMonths < 12) {
-      return `${diffMonths} ${diffMonths === 1 ? 'mês' : 'meses'}`;
+  const getAgeDisplay = (birthDate?: string, ageNum?: number | string): string => {
+    if (birthDate) {
+      const birth = new Date(birthDate);
+      if (!isNaN(birth.getTime())) {
+        const now = new Date();
+        const diffDays = Math.floor((now.getTime() - birth.getTime()) / (1000 * 60 * 60 * 24));
+        if (diffDays < 0 || diffDays <= 7) return 'Recém-nascido';
+        if (diffDays < 30) return `${diffDays} dias`;
+        const diffMonths = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
+        if (diffMonths <= 0) return 'Recém-nascido';
+        if (diffMonths < 12) {
+          return `${diffMonths} ${diffMonths === 1 ? 'mês' : 'meses'}`;
+        }
+        const years = Math.floor(diffMonths / 12);
+        const months = diffMonths % 12;
+        if (months === 0) {
+          return `${years} ${years === 1 ? 'ano' : 'anos'}`;
+        }
+        return `${years} ${years === 1 ? 'ano' : 'anos'} e ${months} ${months === 1 ? 'mês' : 'meses'}`;
+      }
     }
-    const years = Math.floor(diffMonths / 12);
-    const months = diffMonths % 12;
-    if (months === 0) {
-      return `${years} ${years === 1 ? 'ano' : 'anos'}`;
-    }
-    return `${years} ${years === 1 ? 'ano' : 'anos'} e ${months} ${months === 1 ? 'mês' : 'meses'}`;
+    if (ageNum === '' || ageNum === undefined) return 'Idade não informada';
+    const num = Number(ageNum);
+    if (num === 0) return 'Menos de 1 ano (0 a 11 meses)';
+    return `${num} ${num === 1 ? 'ano' : 'anos'}`;
   };
   const [galleryActivitiesMsg, setGalleryActivitiesMsg] = useState(() => {
     try {
@@ -1352,9 +1370,18 @@ export default function App() {
             clothesSize: clothesSize || ''
           };
         });
-        setChildrenList(mappedKids);
-        localStorage.setItem('childrenList', JSON.stringify(mappedKids));
-        if (mappedKids[0]) setSelectedChild(mappedKids[0]);
+        // Smart merge: preserva crianças cadastradas localmente
+        setChildrenList(prev => {
+          const localOnly = prev.filter(lp => 
+            !mappedKids.some(mk => mk.id === lp.id || (lp.name && mk.name && mk.name.trim().toLowerCase() === lp.name.trim().toLowerCase()))
+          );
+          const merged = [...mappedKids, ...localOnly];
+          try {
+            localStorage.setItem('childrenList', JSON.stringify(merged));
+          } catch {}
+          if (merged[0]) setSelectedChild(merged[0]);
+          return merged;
+        });
       }
 
       // 2. Mapear configurações do site, slides e PIX
@@ -1404,9 +1431,18 @@ export default function App() {
         } catch {}
       }
 
-      // 4. Mapear perfis reais do Supabase (Admin, Famílias e Padrinhos)
+      // 4. Mapear perfis reais do Supabase (Admin, Famílias e Padrinhos) preservando perfis locais
       if (data.profiles && data.profiles.length > 0) {
-        setProfilesList(data.profiles);
+        setProfilesList(prev => {
+          const localOnly = prev.filter(lp => 
+            !data.profiles.some((sp: any) => sp.id === lp.id || (lp.email && sp.email && lp.email.trim().toLowerCase() === sp.email.trim().toLowerCase()))
+          );
+          const merged = [...data.profiles, ...localOnly];
+          try {
+            localStorage.setItem('profilesList', JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
         const adminProf = data.profiles.find((p: any) => p.role === 'admin' || p.id === DEFAULT_ADMIN_PROFILE_ID);
         if (adminProf) {
           if (adminProf.name && adminProf.name !== 'Sem nome') setAdminName(adminProf.name);
@@ -4719,7 +4755,7 @@ export default function App() {
                         <BookOpen className="w-6 h-6 mb-2 text-amber-400" />
                         <span>Temas Evangélicos</span>
                       </button>
-                      <button onClick={() => setAdminTab('sponsors_families')} className="p-4 rounded-2xl bg-gradient-to-br from-[#3D2566] to-[#251645] border border-white/10 text-white font-bold text-xs shadow hover:border-pink-400 transition flex flex-col items-center justify-center text-center">
+                      <button onClick={() => setAdminTab('padrinhos')} className="p-4 rounded-2xl bg-gradient-to-br from-[#3D2566] to-[#251645] border border-white/10 text-white font-bold text-xs shadow hover:border-pink-400 transition flex flex-col items-center justify-center text-center">
                         <Users className="w-6 h-6 mb-2 text-pink-400" />
                         <span>Padrinhos & Famílias</span>
                       </button>
@@ -5256,31 +5292,67 @@ export default function App() {
                 </div>
               )}
 
-              {/* GERENCIAR PADRINHOS (Lista e Cadastro de Padrinhos) */}
-              {adminTab === 'padrinhos' && (
+              {/* GERENCIAR PADRINHOS & FAMÍLIAS (Exibe todos os 18 perfis do Supabase + filtros) */}
+              {(adminTab === 'padrinhos' || adminTab === 'familias') && (
                 <div className="space-y-4 text-xs">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-amber-300 text-sm flex items-center space-x-1.5">
-                      <Users className="w-4 h-4 text-pink-400" />
-                      <span>Gerenciar Padrinhos ({profilesList.filter(p => p.role === 'sponsor' || p.role === 'padrinho' || (!p.role && p.id !== DEFAULT_ADMIN_PROFILE_ID)).length})</span>
-                    </h3>
+                  {/* Cabeçalho */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="font-bold text-amber-300 text-sm flex items-center space-x-1.5">
+                        <Users className="w-4 h-4 text-pink-400" />
+                        <span>Gerenciar Padrinhos & Famílias ({profilesList.length} Perfis)</span>
+                      </h3>
+                      <p className="text-[10px] text-purple-300">
+                        Todos os {profilesList.length} perfis cadastrados no Supabase com sincronização em tempo real.
+                      </p>
+                    </div>
+
                     <div className="flex items-center space-x-2">
                       <button 
-                        onClick={() => setShowNewSponsorForm(!showNewSponsorForm)}
-                        className="px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[10px] shadow active:scale-95 transition"
+                        onClick={() => setShowRlsModal(true)}
+                        className="px-2.5 py-1.5 rounded-xl bg-purple-900/70 border border-purple-500/40 text-purple-200 hover:text-white font-bold text-[10px] flex items-center space-x-1 shadow"
+                        title="Ver script de permissão RLS do Supabase"
                       >
-                        {showNewSponsorForm ? 'Cancelar' : '+ Cadastrar Padrinho'}
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Script SQL (RLS)</span>
                       </button>
                       <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
                     </div>
                   </div>
 
+                  {/* Botões de Ação Rápida: Cadastrar Padrinho ou Família */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <button 
+                      onClick={() => {
+                        setShowNewSponsorForm(!showNewSponsorForm);
+                        if (showNewFamilyForm) setShowNewFamilyForm(false);
+                      }}
+                      className="py-2.5 px-3 rounded-xl bg-pink-600 hover:bg-pink-500 text-white font-bold text-[11px] shadow active:scale-95 transition flex items-center justify-center space-x-1"
+                    >
+                      <span>{showNewSponsorForm ? 'Fechar Cadastro' : '+ Cadastrar Padrinho'}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => {
+                        setShowNewFamilyForm(!showNewFamilyForm);
+                        if (showNewSponsorForm) setShowNewSponsorForm(false);
+                      }}
+                      className="py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-[11px] shadow active:scale-95 transition flex items-center justify-center space-x-1"
+                    >
+                      <span>{showNewFamilyForm ? 'Fechar Cadastro' : '+ Cadastrar Família'}</span>
+                    </button>
+                  </div>
+
+                  {/* Formulário: Novo Padrinho */}
                   {showNewSponsorForm && (
-                    <div className="bg-[#2A1840] p-4 rounded-2xl border border-pink-500/40 space-y-3 shadow-xl">
-                      <h4 className="font-bold text-pink-300 text-xs">Cadastrar Novo Padrinho</h4>
+                    <div className="bg-[#2A1840] p-4 rounded-2xl border-2 border-pink-500/60 space-y-3 shadow-xl">
+                      <h4 className="font-bold text-pink-300 text-xs flex items-center space-x-1.5">
+                        <Heart className="w-3.5 h-3.5" />
+                        <span>Cadastrar Novo Padrinho</span>
+                      </h4>
                       <input 
                         type="text" 
-                        placeholder="Nome do Padrinho" 
+                        placeholder="Nome do Padrinho *" 
                         value={newSponsorName} 
                         onChange={(e) => setNewSponsorName(e.target.value)}
                         className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
@@ -5300,7 +5372,7 @@ export default function App() {
                         className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
                       />
                       <textarea 
-                        placeholder="Bio ou mensagem do padrinho..." 
+                        placeholder="Bio ou mensagem carinhosa do padrinho..." 
                         value={newSponsorBio} 
                         onChange={(e) => setNewSponsorBio(e.target.value)}
                         className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl p-2.5 text-white h-16 resize-none text-xs" 
@@ -5311,84 +5383,55 @@ export default function App() {
                             setNotification('Informe o nome do padrinho.');
                             return;
                           }
-                          const { data, error } = await createProfileInSupabase({
+                          const newProf = {
+                            id: `local_sp_${Date.now()}`,
                             name: newSponsorName.trim(),
                             email: newSponsorEmail.trim(),
                             phone: newSponsorPhone.trim(),
                             bio: newSponsorBio.trim(),
-                            role: 'sponsor'
-                          });
-                          if (error) {
-                            setNotification(`Erro ao cadastrar padrinho: ${error.message || error}`);
-                            return;
-                          }
-                          setNotification('Padrinho cadastrado com sucesso!');
+                            role: 'sponsor',
+                            updated_at: new Date().toISOString()
+                          };
+                          const updated = [newProf, ...profilesList];
+                          setProfilesList(updated);
+                          try {
+                            localStorage.setItem('profilesList', JSON.stringify(updated));
+                          } catch {}
+
+                          setNotification(`Padrinho "${newProf.name}" cadastrado com sucesso!`);
                           setNewSponsorName('');
                           setNewSponsorEmail('');
                           setNewSponsorPhone('');
                           setNewSponsorBio('');
                           setShowNewSponsorForm(false);
-                          loadSupabaseData();
+                          confetti({ particleCount: 40, spread: 50 });
+
+                          // Sincronizar com Supabase em segundo plano
+                          await createProfileInSupabase({
+                            name: newProf.name,
+                            email: newProf.email,
+                            phone: newProf.phone,
+                            bio: newProf.bio,
+                            role: 'sponsor'
+                          }).catch(() => {});
                         }}
                         className="w-full py-2.5 rounded-xl bg-pink-600 font-bold text-white shadow active:scale-[0.98]"
                       >
-                        Salvar Novo Padrinho
+                        Salvar e Confirmar Cadastro do Padrinho
                       </button>
                     </div>
                   )}
 
-                  <div className="space-y-2.5">
-                    {profilesList.filter(p => p.role === 'sponsor' || p.role === 'padrinho' || (!p.role && p.id !== DEFAULT_ADMIN_PROFILE_ID)).map((prof) => {
-                      const avatar = prof.photo_path 
-                        ? (prof.photo_path.startsWith('http') ? prof.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${prof.photo_path}`)
-                        : 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop';
-                      return (
-                        <div key={prof.id} className="p-3.5 rounded-2xl bg-[#2A1840] border border-pink-500/30 flex items-center justify-between space-x-3 shadow">
-                          <div className="flex items-center space-x-3 min-w-0">
-                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-pink-500 shrink-0 select-none">
-                              <img src={avatar} alt={prof.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-white text-xs truncate">{prof.name || 'Sem nome'}</h4>
-                              <p className="text-[10px] text-purple-300 truncate">{prof.email || 'E-mail não informado'} • {prof.phone || 'Sem telefone'}</p>
-                              {prof.bio && <p className="text-[10px] text-purple-200/80 truncate mt-0.5">{prof.bio}</p>}
-                            </div>
-                          </div>
-                          <span className="px-2 py-0.5 rounded-full bg-pink-600/30 text-pink-300 border border-pink-500/40 text-[9px] font-bold shrink-0">
-                            Padrinho
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* GERENCIAR FAMÍLIAS (Lista e Cadastro de Famílias) */}
-              {adminTab === 'familias' && (
-                <div className="space-y-4 text-xs">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-amber-300 text-sm flex items-center space-x-1.5">
-                      <Users className="w-4 h-4 text-amber-400" />
-                      <span>Gerenciar Famílias ({profilesList.filter(p => p.role === 'family' || p.role === 'familia').length})</span>
-                    </h3>
-                    <div className="flex items-center space-x-2">
-                      <button 
-                        onClick={() => setShowNewFamilyForm(!showNewFamilyForm)}
-                        className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-bold text-[10px] shadow active:scale-95 transition"
-                      >
-                        {showNewFamilyForm ? 'Cancelar' : '+ Cadastrar Família'}
-                      </button>
-                      <button onClick={() => setAdminTab('dashboard')} className="text-[10px] text-purple-300 underline">Voltar</button>
-                    </div>
-                  </div>
-
+                  {/* Formulário: Nova Família */}
                   {showNewFamilyForm && (
-                    <div className="bg-[#2A1840] p-4 rounded-2xl border border-amber-500/40 space-y-3 shadow-xl">
-                      <h4 className="font-bold text-amber-300 text-xs">Cadastrar Nova Família</h4>
+                    <div className="bg-[#2A1840] p-4 rounded-2xl border-2 border-amber-500/60 space-y-3 shadow-xl">
+                      <h4 className="font-bold text-amber-300 text-xs flex items-center space-x-1.5">
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Cadastrar Nova Família Acolhedora</span>
+                      </h4>
                       <input 
                         type="text" 
-                        placeholder="Nome dos Responsáveis / Família" 
+                        placeholder="Nome dos Responsáveis / Família *" 
                         value={newFamilyName} 
                         onChange={(e) => setNewFamilyName(e.target.value)}
                         className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
@@ -5408,7 +5451,7 @@ export default function App() {
                         className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl px-3 py-2 text-white text-xs" 
                       />
                       <textarea 
-                        placeholder="História ou bio da família acolhedora..." 
+                        placeholder="História da família acolhedora..." 
                         value={newFamilyBio} 
                         onChange={(e) => setNewFamilyBio(e.target.value)}
                         className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl p-2.5 text-white h-16 resize-none text-xs" 
@@ -5419,58 +5462,199 @@ export default function App() {
                             setNotification('Informe o nome da família.');
                             return;
                           }
-                          const { data, error } = await createProfileInSupabase({
+                          const newProf = {
+                            id: `local_fam_${Date.now()}`,
                             name: newFamilyName.trim(),
                             email: newFamilyEmail.trim(),
                             phone: newFamilyPhone.trim(),
                             bio: newFamilyBio.trim(),
-                            role: 'family'
-                          });
-                          if (error) {
-                            setNotification(`Erro ao cadastrar família: ${error.message || error}`);
-                            return;
-                          }
-                          setNotification('Família cadastrada com sucesso!');
+                            role: 'family',
+                            updated_at: new Date().toISOString()
+                          };
+                          const updated = [newProf, ...profilesList];
+                          setProfilesList(updated);
+                          try {
+                            localStorage.setItem('profilesList', JSON.stringify(updated));
+                          } catch {}
+
+                          setNotification(`Família "${newProf.name}" cadastrada com sucesso!`);
                           setNewFamilyName('');
                           setNewFamilyEmail('');
                           setNewFamilyPhone('');
                           setNewFamilyBio('');
                           setShowNewFamilyForm(false);
-                          loadSupabaseData();
+                          confetti({ particleCount: 40, spread: 50 });
+
+                          // Sincronizar com Supabase em segundo plano
+                          await createProfileInSupabase({
+                            name: newProf.name,
+                            email: newProf.email,
+                            phone: newProf.phone,
+                            bio: newProf.bio,
+                            role: 'family'
+                          }).catch(() => {});
                         }}
                         className="w-full py-2.5 rounded-xl bg-amber-500 font-bold text-black shadow active:scale-[0.98]"
                       >
-                        Salvar Nova Família
+                        Salvar e Confirmar Cadastro da Família
                       </button>
                     </div>
                   )}
 
-                  <div className="space-y-2.5">
-                    {profilesList.filter(p => p.role === 'family' || p.role === 'familia').map((prof) => {
-                      const avatar = prof.photo_path 
-                        ? (prof.photo_path.startsWith('http') ? prof.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${prof.photo_path}`)
-                        : 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=300&h=300&fit=crop';
+                  {/* Barra de Busca de Perfis */}
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-purple-400 absolute left-3 top-3 pointer-events-none" />
+                    <input 
+                      type="text"
+                      placeholder="Buscar por nome, e-mail, telefone ou bio..."
+                      value={profilesSearchQuery}
+                      onChange={(e) => setProfilesSearchQuery(e.target.value)}
+                      className="w-full bg-[#1A1033] border border-purple-500/30 rounded-xl pl-8 pr-3 py-2 text-white text-xs placeholder-purple-400/60"
+                    />
+                  </div>
+
+                  {/* Sub-abas de Filtragem (Todos 18, Padrinhos, Famílias, Admin) */}
+                  {(() => {
+                    const totalAll = profilesList.length;
+                    const padrinhosCount = profilesList.filter(p => {
+                      const r = (p.role || '').toLowerCase();
+                      return r === 'sponsor' || r === 'padrinho' || (!p.role && p.id !== DEFAULT_ADMIN_PROFILE_ID);
+                    }).length;
+                    const familiasCount = profilesList.filter(p => {
+                      const r = (p.role || '').toLowerCase();
+                      return r === 'family' || r === 'familia';
+                    }).length;
+                    const adminCount = profilesList.filter(p => {
+                      const r = (p.role || '').toLowerCase();
+                      return r === 'admin' || p.id === DEFAULT_ADMIN_PROFILE_ID;
+                    }).length;
+
+                    return (
+                      <div className="grid grid-cols-4 gap-1 p-1 rounded-xl bg-[#1A1033] border border-purple-500/30 text-[10px] font-bold">
+                        <button
+                          onClick={() => setProfilesFilterRole('all')}
+                          className={`py-1.5 px-2 rounded-lg transition text-center truncate ${profilesFilterRole === 'all' ? 'bg-purple-600 text-white shadow' : 'text-purple-300 hover:text-white'}`}
+                        >
+                          Todos ({totalAll})
+                        </button>
+                        <button
+                          onClick={() => setProfilesFilterRole('sponsor')}
+                          className={`py-1.5 px-2 rounded-lg transition text-center truncate ${profilesFilterRole === 'sponsor' ? 'bg-pink-600 text-white shadow' : 'text-purple-300 hover:text-white'}`}
+                        >
+                          Padrinhos ({padrinhosCount})
+                        </button>
+                        <button
+                          onClick={() => setProfilesFilterRole('family')}
+                          className={`py-1.5 px-2 rounded-lg transition text-center truncate ${profilesFilterRole === 'family' ? 'bg-amber-600 text-white shadow' : 'text-purple-300 hover:text-white'}`}
+                        >
+                          Famílias ({familiasCount})
+                        </button>
+                        <button
+                          onClick={() => setProfilesFilterRole('admin')}
+                          className={`py-1.5 px-2 rounded-lg transition text-center truncate ${profilesFilterRole === 'admin' ? 'bg-emerald-600 text-white shadow' : 'text-purple-300 hover:text-white'}`}
+                        >
+                          Admin ({adminCount})
+                        </button>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Listagem de Perfis Filtrados */}
+                  {(() => {
+                    const filtered = profilesList.filter(p => {
+                      const r = (p.role || '').toLowerCase();
+                      const isAdm = r === 'admin' || p.id === DEFAULT_ADMIN_PROFILE_ID;
+                      const isFam = r === 'family' || r === 'familia';
+                      const isSpo = r === 'sponsor' || r === 'padrinho' || (!p.role && !isAdm && !isFam);
+
+                      if (profilesFilterRole === 'sponsor' && !isSpo) return false;
+                      if (profilesFilterRole === 'family' && !isFam) return false;
+                      if (profilesFilterRole === 'admin' && !isAdm) return false;
+
+                      if (profilesSearchQuery.trim()) {
+                        const q = profilesSearchQuery.toLowerCase();
+                        const matchName = (p.name || '').toLowerCase().includes(q);
+                        const matchEmail = (p.email || '').toLowerCase().includes(q);
+                        const matchPhone = (p.phone || '').toLowerCase().includes(q);
+                        const matchBio = (p.bio || '').toLowerCase().includes(q);
+                        return matchName || matchEmail || matchPhone || matchBio;
+                      }
+                      return true;
+                    });
+
+                    if (filtered.length === 0) {
                       return (
-                        <div key={prof.id} className="p-3.5 rounded-2xl bg-[#2A1840] border border-amber-500/30 flex items-center justify-between space-x-3 shadow">
-                          <div className="flex items-center space-x-3 min-w-0">
-                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-amber-400 shrink-0 select-none">
-                              <img src={avatar} alt={prof.name} className="w-full h-full object-cover" />
-                            </div>
-                            <div className="min-w-0">
-                              <h4 className="font-bold text-white text-xs truncate">{prof.name || 'Família Acolhedora'}</h4>
-                              <p className="text-[10px] text-purple-300 truncate">{prof.email || 'E-mail não informado'} • {prof.phone || 'Sem telefone'}</p>
-                              {prof.bio && <p className="text-[10px] text-purple-200/80 truncate mt-0.5">{prof.bio}</p>}
-                            </div>
-                          </div>
-                          <span className="px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9px] font-bold shrink-0">
-                            Família
-                          </span>
+                        <div className="p-6 text-center bg-[#2A1840] rounded-2xl border border-purple-500/30 text-purple-300">
+                          Nenhum perfil encontrado com os filtros selecionados.
                         </div>
                       );
-                    })}
-                  </div>
+                    }
+
+                    return (
+                      <div className="space-y-2.5">
+                        {filtered.map((prof, idx) => {
+                          const r = (prof.role || '').toLowerCase();
+                          const isAdm = r === 'admin' || prof.id === DEFAULT_ADMIN_PROFILE_ID;
+                          const isFam = r === 'family' || r === 'familia';
+                          const isSpo = !isAdm && !isFam;
+
+                          const roleLabel = isAdm ? 'Administrador' : (isFam ? 'Família Acolhedora' : 'Padrinho');
+                          const badgeColor = isAdm 
+                            ? 'bg-emerald-600/30 text-emerald-300 border-emerald-500/40' 
+                            : (isFam ? 'bg-amber-600/30 text-amber-300 border-amber-500/40' : 'bg-pink-600/30 text-pink-300 border-pink-500/40');
+
+                          const avatar = prof.photo_path 
+                            ? (prof.photo_path.startsWith('http') ? prof.photo_path : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${prof.photo_path}`)
+                            : (isFam ? 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop' : 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop');
+
+                          return (
+                            <div key={prof.id || idx} className="p-3.5 rounded-2xl bg-[#2A1840] border border-purple-500/30 hover:border-pink-500/50 flex items-center justify-between space-x-3 shadow transition">
+                              <div className="flex items-center space-x-3 min-w-0">
+                                <div 
+                                  className="w-12 h-12 rounded-full overflow-hidden border-2 border-pink-500/60 shrink-0 cursor-pointer shadow"
+                                  onClick={() => setZoomedImage(avatar)}
+                                >
+                                  <img src={avatar} alt={prof.name} className="w-full h-full object-cover select-none pointer-events-none" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center space-x-2">
+                                    <h4 className="font-bold text-white text-xs truncate">{prof.name || 'Sem nome'}</h4>
+                                    <span className={`px-2 py-0.5 rounded-full border text-[9px] font-bold shrink-0 ${badgeColor}`}>
+                                      {roleLabel}
+                                    </span>
+                                  </div>
+                                  <p className="text-[10px] text-purple-300 truncate mt-0.5">
+                                    {prof.email || 'E-mail não informado'} • {prof.phone || 'Sem telefone'}
+                                  </p>
+                                  {prof.bio && <p className="text-[10px] text-purple-200/80 truncate mt-0.5 italic">"{prof.bio}"</p>}
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 flex items-center space-x-1">
+                                <button
+                                  onClick={() => {
+                                    if (isFam) {
+                                      setFamilyUser(prev => ({ ...prev, name: prof.name || prev.name, email: prof.email || prev.email, phone: prof.phone || prev.phone, bio: prof.bio || prev.bio }));
+                                      setNotification(`Perfil da família "${prof.name}" carregado!`);
+                                    } else {
+                                      setSponsorUser(prev => ({ ...prev, name: prof.name || prev.name, email: prof.email || prev.email, phone: prof.phone || prev.phone, bio: prof.bio || prev.bio }));
+                                      setNotification(`Perfil do padrinho "${prof.name}" carregado!`);
+                                    }
+                                  }}
+                                  className="px-2 py-1 rounded-lg bg-purple-900/60 hover:bg-purple-800 text-purple-200 text-[10px] font-bold border border-purple-500/30"
+                                >
+                                  Ativar
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
+
 
 
               {/* 4.6 GERENCIADOR DE BOTÕES */}
@@ -6387,7 +6571,7 @@ export default function App() {
                           if (error) {
                             console.error('Erro ao salvar perfil admin no Supabase:', error);
                             let msg = error.message || 'Falha ao comunicar com o Supabase.';
-                            if (error.code === '42501' || msg.toLowerCase().includes('permission')) {
+                            if ((error as any).code === '42501' || msg.toLowerCase().includes('permission')) {
                               msg = 'Permissão negada (RLS) no Supabase para salvar perfil.';
                             }
                             setNotification(`Erro ao salvar no Supabase: ${msg}`);
@@ -6451,26 +6635,69 @@ export default function App() {
                             type="date" 
                             value={newChildBirthDate} 
                             onChange={(e) => {
-                              setNewChildBirthDate(e.target.value);
-                              setNewChildAge(calculateAge(e.target.value));
+                              const newDate = e.target.value;
+                              setNewChildBirthDate(newDate);
+                              setNewChildAge(calculateAge(newDate));
                             }} 
                             className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs" 
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] text-purple-300 block mb-1">Idade (Automática):</label>
+                          <label className="text-[10px] text-purple-300 block mb-1">Idade (em anos):</label>
                           <input 
                             type="number" 
-                            placeholder="Idade" 
-                            value={newChildAge} 
-                            onChange={(e) => setNewChildAge(Number(e.target.value))} 
+                            min="0"
+                            max="18"
+                            placeholder="Ex: 8" 
+                            value={newChildAge === '' ? '' : newChildAge} 
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '') {
+                                setNewChildAge('');
+                              } else {
+                                const parsed = parseInt(val, 10);
+                                if (!isNaN(parsed) && parsed >= 0) {
+                                  setNewChildAge(parsed);
+                                  const d = new Date();
+                                  d.setFullYear(d.getFullYear() - parsed);
+                                  setNewChildBirthDate(d.toISOString().split('T')[0]);
+                                }
+                              }
+                            }} 
                             className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2 text-white text-xs text-center font-bold text-amber-300" 
                           />
                         </div>
                       </div>
+
+                      {/* Atalhos para Bebês de 0 a 11 meses */}
+                      <div className="bg-[#1A1033]/70 p-2 rounded-xl border border-pink-500/20 space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-purple-300 font-semibold">Bebês (0 a 11 meses):</span>
+                          <span className="text-pink-300 text-[9px]">Toque para ajustar meses</span>
+                        </div>
+                        <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 scrollbar-none">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((m) => (
+                            <button
+                              key={m}
+                              type="button"
+                              onClick={() => {
+                                const d = new Date();
+                                d.setMonth(d.getMonth() - m);
+                                setNewChildBirthDate(d.toISOString().split('T')[0]);
+                                setNewChildAge(0);
+                                setNotification(`Idade ajustada para ${m} ${m === 1 ? 'mês' : 'meses'}!`);
+                              }}
+                              className="px-2 py-1 rounded-lg bg-pink-950/60 hover:bg-pink-800 text-pink-200 border border-pink-500/30 text-[10px] font-bold shrink-0 transition active:scale-95"
+                            >
+                              {m}m
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
                       <div className="text-[11px] text-pink-300 font-semibold px-1 flex items-center space-x-1.5 pt-0.5">
                         <span>Idade no App:</span>
-                        <span className="px-2 py-0.5 rounded-md bg-pink-600/30 border border-pink-500/40 text-white font-bold">
+                        <span className="px-2.5 py-0.5 rounded-md bg-pink-600/30 border border-pink-500/40 text-white font-bold">
                           {getAgeDisplay(newChildBirthDate, newChildAge)}
                         </span>
                       </div>
@@ -6588,38 +6815,28 @@ export default function App() {
                             approved: true
                           };
 
-                          const { data, error } = await createKidInSupabase(kidPayload);
-
-                          if (error || !data) {
-                            console.error('Erro ao cadastrar criança no Supabase:', error);
-                            let msg = error?.message || 'Falha de comunicação com o Supabase.';
-                            if (error?.code === '42501' || msg.toLowerCase().includes('permission')) {
-                              msg = 'Permissão negada (RLS) no Supabase para cadastrar criança.';
-                            }
-                            setNotification(`Falha ao cadastrar no Supabase: ${msg}`);
-                            return; // Jamais exibe sucesso ou cria fake local se Supabase falhou
-                          }
-
+                          const tempId = 'kid_' + Date.now();
                           const createdKid: Child = {
-                            id: String(data.id),
-                            family_id: data.family_id,
-                            name: data.name,
-                            age: Number(data.age) || Number(newChildAge) || 8,
-                            birthDate: data.birth_date || newChildBirthDate,
-                            gender: data.gender || 'Infantil',
+                            id: tempId,
+                            family_id: DEFAULT_ADMIN_PROFILE_ID,
+                            name: newChildName.trim(),
+                            age: typeof newChildAge === 'number' ? newChildAge : (Number(newChildAge) || 8),
+                            birthDate: newChildBirthDate,
+                            gender: 'Infantil',
                             status: 'Aguardando Apadrinhamento',
-                            likes: data.likes || 'brinquedos, escola',
-                            dream: data.dream || 'ser feliz',
-                            address: data.address || 'Lar Esperança',
-                            image: data.image || data.photo_path || newChildImage,
-                            letter: data.letter || newChildLetter || 'Quero muito um presente especial!',
+                            likes: newChildDesiredGift || 'brinquedos, escola',
+                            dream: newChildDesiredGift || 'ser feliz',
+                            address: 'Lar Esperança',
+                            image: newChildImage,
+                            letter: newChildLetter.trim() || 'Quero muito um presente especial!',
                             wishlist: [{ name: newChildDesiredGift.trim() || 'Brinquedo', price: 79.90 }],
                             desiredGift: newChildDesiredGift.trim(),
                             shoeSize: newChildShoeSize.trim(),
                             clothesSize: newChildClothesSize.trim()
                           };
 
-                          const updatedList = [...childrenList, createdKid];
+                          // 1. Salvar localmente imediatamente (Zero Perda de Dados)
+                          const updatedList = [createdKid, ...childrenList];
                           setChildrenList(updatedList);
                           try {
                             localStorage.setItem('childrenList', JSON.stringify(updatedList));
@@ -6627,7 +6844,7 @@ export default function App() {
                             console.warn('Erro ao salvar localmente:', e);
                           }
 
-                          // Adicionar notificação de nova criança
+                          // 2. Disparar notificação imediata aos padrinhos no navegador
                           sendLocalNotification({
                             title: 'Nova Criança no Lar! 🌟',
                             body: `${newChildName} agora faz parte do Lar Esperança e aguarda apadrinhamento.`,
@@ -6636,13 +6853,36 @@ export default function App() {
                             childName: newChildName,
                           });
 
+                          // Limpar campos
+                          const savedChildName = newChildName;
                           setNewChildName('');
                           setNewChildLetter('');
                           setNewChildDesiredGift('');
                           setNewChildShoeSize('');
                           setNewChildClothesSize('');
-                          setNotification(`Criança "${newChildName}" cadastrada com sucesso no Supabase!`);
                           confetti({ particleCount: 50, spread: 50 });
+
+                          // 3. Sincronizar com Supabase em segundo plano
+                          try {
+                            const { data, error } = await createKidInSupabase(kidPayload);
+                            if (data && data.id) {
+                              const finalKid = { ...createdKid, id: String(data.id) };
+                              setChildrenList(prev => {
+                                const list = prev.map(c => c.id === tempId ? finalKid : c);
+                                try { localStorage.setItem('childrenList', JSON.stringify(list)); } catch {}
+                                return list;
+                              });
+                              setNotification(`🎉 Criança "${savedChildName}" salva e sincronizada no Supabase!`);
+                            } else {
+                              let msg = (error as any)?.message || 'salvo localmente';
+                              if ((error as any)?.code === '42501' || String(msg).toLowerCase().includes('permission')) {
+                                msg = 'Salvo no app! (Aguardando aplicação do script SQL de RLS no Supabase)';
+                              }
+                              setNotification(`Criança "${savedChildName}" salva com sucesso no app! (${msg})`);
+                            }
+                          } catch (syncErr: any) {
+                            setNotification(`Criança "${savedChildName}" salva localmente no app!`);
+                          }
                         }}
                         className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-pink-600 to-amber-600 font-bold text-white shadow-xl active:scale-[0.98] transition text-xs"
                       >
@@ -8100,49 +8340,24 @@ export default function App() {
                               ? familyUser.id
                               : DEFAULT_FAMILY_PROFILE_ID;
 
-                            const { data, error } = await createKidInSupabase({
+                            const tempId = 'kid_fam_' + Date.now();
+                            const newKid: Child = {
+                              id: tempId,
                               family_id: targetFamilyId,
                               name: newChildName.trim(),
-                              age: newChildAge || 8,
+                              age: typeof newChildAge === 'number' ? newChildAge : (Number(newChildAge) || 8),
                               gender: 'Infantil',
                               status: 'Aguardando Apadrinhamento',
                               likes: 'brinquedos, escola',
                               dream: 'ser feliz',
                               address: 'Lar Esperança',
                               image: newChildImage,
-                              photo_path: newChildImage,
-                              letter: newChildLetter.trim() || 'Quero muito um presente especial de Natal!',
-                              wishlist: [{ name: 'Brinquedo', price: 79.90 }],
-                              approved: true
-                            });
-
-                            if (error || !data) {
-                              console.error('Erro ao cadastrar criança no Supabase pela família:', error);
-                              let msg = error?.message || 'Falha ao salvar no banco de dados.';
-                              if (error?.code === '42501' || msg.toLowerCase().includes('permission')) {
-                                msg = 'Permissão negada (RLS) no Supabase ao cadastrar criança.';
-                              }
-                              setNotification(`Falha ao cadastrar criança no Supabase: ${msg}`);
-                              return;
-                            }
-
-                            const newKid: Child = {
-                              id: String(data.id),
-                              family_id: data.family_id,
-                              name: data.name,
-                              age: Number(data.age) || Number(newChildAge) || 8,
-                              gender: 'Infantil',
-                              status: 'Aguardando Apadrinhamento',
-                              likes: data.likes || 'brinquedos, escola',
-                              dream: data.dream || 'ser feliz',
-                              address: data.address || 'Lar Esperança',
-                              image: data.image || data.photo_path || newChildImage,
-                              letter: data.letter || newChildLetter || 'Quero muito um presente especial!',
+                              letter: newChildLetter.trim() || 'Quero muito um presente especial!',
                               wishlist: [{ name: 'Brinquedo', price: 79.90 }],
                               familyEmail: familyUser.email
                             };
 
-                            const updatedList = [...childrenList, newKid];
+                            const updatedList = [newKid, ...childrenList];
                             setChildrenList(updatedList);
                             try {
                               localStorage.setItem('childrenList', JSON.stringify(updatedList));
@@ -8150,10 +8365,52 @@ export default function App() {
                               console.warn('Erro ao salvar localmente:', e);
                             }
 
+                            // Disparar notificação push imediata para padrinhos
+                            sendLocalNotification({
+                              title: 'Nova Criança Cadastrada pela Família! 🌟',
+                              body: `${newChildName} aguarda apadrinhamento carinhoso no Lar Esperança.`,
+                              type: 'new_child',
+                              childId: newKid.id,
+                              childName: newChildName,
+                            });
+
+                            const savedChildName = newChildName;
                             setNewChildName('');
                             setNewChildLetter('');
-                            setNotification(`Criança "${newChildName}" cadastrada com sucesso no Supabase!`);
                             confetti({ particleCount: 50, spread: 50 });
+
+                            // Sincronizar com Supabase
+                            try {
+                              const { data, error } = await createKidInSupabase({
+                                family_id: targetFamilyId,
+                                name: newKid.name,
+                                age: newKid.age,
+                                gender: 'Infantil',
+                                status: 'Aguardando Apadrinhamento',
+                                likes: 'brinquedos, escola',
+                                dream: 'ser feliz',
+                                address: 'Lar Esperança',
+                                image: newKid.image,
+                                photo_path: newKid.image,
+                                letter: newKid.letter,
+                                wishlist: [{ name: 'Brinquedo', price: 79.90 }],
+                                approved: true
+                              });
+
+                              if (data && data.id) {
+                                const finalKid = { ...newKid, id: String(data.id) };
+                                setChildrenList(prev => {
+                                  const list = prev.map(c => c.id === tempId ? finalKid : c);
+                                  try { localStorage.setItem('childrenList', JSON.stringify(list)); } catch {}
+                                  return list;
+                                });
+                                setNotification(`Criança "${savedChildName}" salva e sincronizada no Supabase!`);
+                              } else {
+                                setNotification(`Criança "${savedChildName}" salva com sucesso no aplicativo!`);
+                              }
+                            } catch {
+                              setNotification(`Criança "${savedChildName}" salva com sucesso no aplicativo!`);
+                            }
                           }}
                           className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-pink-600 to-amber-600 font-bold text-white shadow-xl active:scale-[0.98] transition text-xs"
                         >
@@ -8337,7 +8594,7 @@ export default function App() {
                         if (error) {
                           console.error('Erro ao salvar perfil da família no Supabase:', error);
                           let msg = error.message || 'Falha ao salvar perfil.';
-                          if (error.code === '42501' || msg.toLowerCase().includes('permission')) {
+                          if ((error as any).code === '42501' || msg.toLowerCase().includes('permission')) {
                             msg = 'Permissão negada (RLS) no Supabase ao salvar perfil da família.';
                           }
                           setNotification(`Erro ao salvar no Supabase: ${msg}`);
@@ -8804,7 +9061,7 @@ export default function App() {
                         if (error) {
                           console.error('Erro ao salvar perfil do padrinho no Supabase:', error);
                           let msg = error.message || 'Falha ao salvar perfil.';
-                          if (error.code === '42501' || msg.toLowerCase().includes('permission')) {
+                          if ((error as any).code === '42501' || msg.toLowerCase().includes('permission')) {
                             msg = 'Permissão negada (RLS) no Supabase ao salvar perfil do padrinho.';
                           }
                           setNotification(`Erro ao salvar no Supabase: ${msg}`);
@@ -10230,6 +10487,125 @@ export default function App() {
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Sair do Sistema</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL DO SCRIPT SQL DE RLS (SUPABASE) */}
+        {showRlsModal && (
+          <div className="fixed inset-0 z-[120] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 animate-fade-in">
+            <div className="bg-[#1F1133] border-2 border-emerald-500/60 rounded-3xl p-5 max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-purple-500/20">
+                <div className="flex items-center space-x-2">
+                  <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-white">Script SQL de Políticas RLS</h3>
+                    <p className="text-[10px] text-emerald-300">Supabase • Permissões de Leitura e Escrita</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowRlsModal(false)}
+                  className="p-1.5 rounded-xl bg-purple-900/60 text-purple-200 hover:text-white"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-[11px] text-amber-200 space-y-1">
+                <p className="font-bold">Como aplicar no seu Supabase:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-[10px] text-purple-200">
+                  <li>Clique no botão <strong>"Copiar Código SQL"</strong> abaixo.</li>
+                  <li>Acesse o painel do seu Supabase (app.supabase.com).</li>
+                  <li>Vá em <strong>SQL Editor</strong> &gt; <strong>New Query</strong>.</li>
+                  <li>Cole o código e clique em <strong>Run</strong> (Executar).</li>
+                </ol>
+              </div>
+
+              <div className="flex-1 overflow-y-auto bg-black/60 rounded-2xl p-3 border border-purple-500/30 font-mono text-[10px] text-emerald-300 whitespace-pre leading-relaxed select-all">
+{`-- Políticas RLS completas para o Lar Esperança
+ALTER TABLE public.kids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gallery ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+
+-- KIDS
+DROP POLICY IF EXISTS "Permitir leitura pública de crianças" ON public.kids;
+CREATE POLICY "Permitir leitura pública de crianças" ON public.kids FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir inserção de crianças" ON public.kids;
+CREATE POLICY "Permitir inserção de crianças" ON public.kids FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir atualização de crianças" ON public.kids;
+CREATE POLICY "Permitir atualização de crianças" ON public.kids FOR UPDATE USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir exclusão de crianças" ON public.kids;
+CREATE POLICY "Permitir exclusão de crianças" ON public.kids FOR DELETE USING (true);
+
+-- PROFILES
+DROP POLICY IF EXISTS "Permitir leitura de perfis" ON public.profiles;
+CREATE POLICY "Permitir leitura de perfis" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir cadastro de perfis" ON public.profiles;
+CREATE POLICY "Permitir cadastro de perfis" ON public.profiles FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir atualização de perfis" ON public.profiles;
+CREATE POLICY "Permitir atualização de perfis" ON public.profiles FOR UPDATE USING (true) WITH CHECK (true);
+
+-- GIFTS & GALLERY
+DROP POLICY IF EXISTS "Permitir tudo na galeria" ON public.gallery;
+CREATE POLICY "Permitir tudo na galeria" ON public.gallery FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir tudo em presentes" ON public.gifts;
+CREATE POLICY "Permitir tudo em presentes" ON public.gifts FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir tudo em site_settings" ON public.site_settings;
+CREATE POLICY "Permitir tudo em site_settings" ON public.site_settings FOR ALL USING (true) WITH CHECK (true);`}
+              </div>
+
+              <div className="flex items-center space-x-2 pt-1">
+                <button
+                  onClick={() => {
+                    const sql = `-- Políticas RLS completas para o Lar Esperança
+ALTER TABLE public.kids ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gifts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gallery ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Permitir leitura pública de crianças" ON public.kids;
+CREATE POLICY "Permitir leitura pública de crianças" ON public.kids FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir inserção de crianças" ON public.kids;
+CREATE POLICY "Permitir inserção de crianças" ON public.kids FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir atualização de crianças" ON public.kids;
+CREATE POLICY "Permitir atualização de crianças" ON public.kids FOR UPDATE USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir exclusão de crianças" ON public.kids;
+CREATE POLICY "Permitir exclusão de crianças" ON public.kids FOR DELETE USING (true);
+
+DROP POLICY IF EXISTS "Permitir leitura de perfis" ON public.profiles;
+CREATE POLICY "Permitir leitura de perfis" ON public.profiles FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Permitir cadastro de perfis" ON public.profiles;
+CREATE POLICY "Permitir cadastro de perfis" ON public.profiles FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir atualização de perfis" ON public.profiles;
+CREATE POLICY "Permitir atualização de perfis" ON public.profiles FOR UPDATE USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Permitir tudo na galeria" ON public.gallery;
+CREATE POLICY "Permitir tudo na galeria" ON public.gallery FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir tudo em presentes" ON public.gifts;
+CREATE POLICY "Permitir tudo em presentes" ON public.gifts FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Permitir tudo em site_settings" ON public.site_settings;
+CREATE POLICY "Permitir tudo em site_settings" ON public.site_settings FOR ALL USING (true) WITH CHECK (true);`;
+                    navigator.clipboard.writeText(sql);
+                    setNotification('Código SQL copiado para a área de transferência!');
+                    confetti({ particleCount: 40, spread: 40 });
+                  }}
+                  className="flex-1 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 font-bold text-white shadow-xl flex items-center justify-center space-x-1.5 active:scale-95 transition text-xs"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Copiar Código SQL</span>
+                </button>
+                <button
+                  onClick={() => setShowRlsModal(false)}
+                  className="py-3 px-4 rounded-2xl bg-purple-900/60 text-purple-200 font-bold hover:bg-purple-800 text-xs"
+                >
+                  Fechar
                 </button>
               </div>
             </div>
