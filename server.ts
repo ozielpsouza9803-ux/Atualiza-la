@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -6,10 +7,29 @@ import { createClient } from '@supabase/supabase-js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://utrpckrchcbqgzbhvlzy.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_YkRZNDptF3UTgjhFjL2wVw_InE5wV7L';
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const serverSupabase = createClient(supabaseUrl, supabaseKey);
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('ERROR: VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY missing.');
+}
+if (!supabaseServiceRoleKey) {
+  console.warn('WARNING: SUPABASE_SERVICE_ROLE_KEY is not set. Admin functions will be limited.');
+}
+
+const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
+const serverSupabase = supabaseServiceRoleKey ? createClient(supabaseUrl || '', supabaseServiceRoleKey) : null;
+
+// Middleware de autorização estrita para rotas administrativas
+const authorizeAdmin = (req: any, res: any, next: any) => {
+  const adminSecret = req.headers['x-admin-secret'];
+  if (process.env.ADMIN_API_SECRET && adminSecret === process.env.ADMIN_API_SECRET) {
+    next();
+  } else {
+    res.status(403).json({ error: 'Unauthorized: Forbidden.' });
+  }
+};
 
 async function startServer() {
   const app = express();
@@ -26,12 +46,13 @@ async function startServer() {
   // Endpoints seguros do Supabase (executados com segurança no backend)
   app.get('/api/supabase/data', async (req, res) => {
     try {
+      const client = serverSupabase || supabase;
       const [kidsRes, giftsRes, settingsRes, galleryRes, profilesRes] = await Promise.all([
-        serverSupabase.from('kids').select('*').order('created_at', { ascending: true }),
-        serverSupabase.from('gifts').select('*'),
-        serverSupabase.from('site_settings').select('*').limit(1),
-        serverSupabase.from('gallery').select('*').order('sort_order', { ascending: true }),
-        serverSupabase.from('profiles').select('*')
+        client.from('kids').select('*').order('created_at', { ascending: true }),
+        client.from('gifts').select('*'),
+        client.from('site_settings').select('*').limit(1),
+        client.from('gallery').select('*').order('sort_order', { ascending: true }),
+        client.from('profiles').select('*')
       ]);
 
       res.json({
@@ -50,7 +71,8 @@ async function startServer() {
   // Endpoints da Galeria (Upload para o bucket 'media' e gravação na tabela 'gallery')
   app.get('/api/supabase/gallery', async (req, res) => {
     try {
-      const { data, error } = await serverSupabase
+      const client = serverSupabase || supabase;
+      const { data, error } = await client
         .from('gallery')
         .select('*')
         .order('created_at', { ascending: false });
@@ -77,7 +99,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/supabase/gallery/upload', async (req, res) => {
+  app.post('/api/supabase/gallery/upload', authorizeAdmin, async (req, res) => {
     try {
       const { fileName, contentType, base64, title, description } = req.body;
       if (!base64) {
@@ -98,6 +120,8 @@ async function startServer() {
       const mimeType = contentType || (ext === 'png' ? 'image/png' : 'image/jpeg');
 
       // 1. Upload seguro para o Supabase Storage (bucket 'media')
+      if (!serverSupabase) return res.status(500).json({ error: 'Server misconfiguration: Service role key missing.' });
+      
       const { error: uploadError } = await serverSupabase.storage
         .from('media')
         .upload(storagePath, buffer, {
@@ -149,9 +173,10 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/supabase/gallery', async (req, res) => {
+  app.delete('/api/supabase/gallery', authorizeAdmin, async (req, res) => {
     try {
       const { id, path: targetPath, url } = req.body;
+      if (!serverSupabase) return res.status(500).json({ error: 'Server misconfiguration: Service role key missing.' });
 
       let resolvedPath = targetPath;
       let recordId = id;
@@ -203,10 +228,12 @@ async function startServer() {
     }
   });
 
-  app.post('/api/supabase/kids', async (req, res) => {
+  app.post('/api/supabase/kids', authorizeAdmin, async (req, res) => {
     try {
       const row = req.body;
-      const { data, error } = await serverSupabase.from('kids').insert([row]).select();
+      const client = serverSupabase;
+      if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
+      const { data, error } = await client.from('kids').insert([row]).select();
       if (error) {
         return res.status(400).json({ error: error.message, code: error.code });
       }
@@ -216,11 +243,13 @@ async function startServer() {
     }
   });
 
-  app.put('/api/supabase/kids/:id', async (req, res) => {
+  app.put('/api/supabase/kids/:id', authorizeAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = req.body;
-      const { data, error } = await serverSupabase.from('kids').update(updates).eq('id', id).select();
+      const client = serverSupabase;
+      if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
+      const { data, error } = await client.from('kids').update(updates).eq('id', id).select();
       if (error) {
         return res.status(400).json({ error: error.message, code: error.code });
       }
@@ -230,11 +259,13 @@ async function startServer() {
     }
   });
 
-  app.delete('/api/supabase/kids/:id', async (req, res) => {
+  app.delete('/api/supabase/kids/:id', authorizeAdmin, async (req, res) => {
     try {
       const { id } = req.params;
-      await serverSupabase.from('gifts').delete().eq('kid_id', id);
-      const { error } = await serverSupabase.from('kids').delete().eq('id', id);
+      const client = serverSupabase;
+      if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
+      await client.from('gifts').delete().eq('kid_id', id);
+      const { error } = await client.from('kids').delete().eq('id', id);
       if (error) {
         return res.status(400).json({ error: error.message, code: error.code });
       }
@@ -244,14 +275,16 @@ async function startServer() {
     }
   });
 
-  app.put('/api/supabase/profiles/:id', async (req, res) => {
+  app.put('/api/supabase/profiles/:id', authorizeAdmin, async (req, res) => {
     try {
       const { id } = req.params;
       const updates = {
         ...req.body,
         updated_at: new Date().toISOString()
       };
-      const { data, error } = await serverSupabase.from('profiles').update(updates).eq('id', id).select();
+      const client = serverSupabase;
+      if (!client) return res.status(500).json({ error: 'Server misconfiguration.' });
+      const { data, error } = await client.from('profiles').update(updates).eq('id', id).select();
       if (error) {
         return res.status(400).json({ error: error.message, code: error.code });
       }
@@ -261,9 +294,11 @@ async function startServer() {
     }
   });
 
-  app.put('/api/supabase/settings', async (req, res) => {
+  app.put('/api/supabase/settings', authorizeAdmin, async (req, res) => {
     try {
       const { slides } = req.body;
+      if (!serverSupabase) return res.status(500).json({ error: 'Server misconfiguration: Service role key missing.' });
+      
       const { data: existing } = await serverSupabase.from('site_settings').select('id').limit(1);
       const targetId = existing?.[0]?.id;
 
