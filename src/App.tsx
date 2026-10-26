@@ -6529,7 +6529,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* 4.9 PIX & MENSAGEM DE DOAÇÃO */}
+               {/* 4.9 PIX & MENSAGEM DE DOAÇÃO */}
               {adminTab === 'pix' && (
                 <div className="space-y-4 text-xs">
                   <div className="flex items-center justify-between">
@@ -6547,24 +6547,20 @@ export default function App() {
                       />
                     </div>
                     <div>
-                      <label className="text-amber-200">Chave PIX (Copia e Cola)</label>
+                      <label className="text-amber-200">Chave PIX</label>
                       <input type="text" value={pixKey} onChange={(e) => setPixKey(e.target.value)} className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2.5 text-white mt-1" />
                     </div>
                     <div>
-                      <label className="text-amber-200">Nome do Banco / Instituição</label>
+                      <label className="text-amber-200">Nome do Banco</label>
                       <input type="text" value={pixBankName} onChange={(e) => setPixBankName(e.target.value)} className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2.5 text-white mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-amber-200">URL do QR Code PIX</label>
-                      <input type="text" value={pixQrCode} onChange={(e) => setPixQrCode(e.target.value)} className="w-full bg-[#1A1033] border border-amber-500/30 rounded-xl px-3 py-2.5 text-white mt-1" />
                     </div>
                     <button 
                       onClick={async () => {
                         await persistSiteSettingsToSupabase(banners, stories916, { key: pixKey, name: pixBankName, msg: donationCustomMessage, qr: pixQrCode });
-                        setNotification('Dados do PIX e mensagem salvos no Supabase com sucesso!');
+                        setNotification('Dados do PIX e mensagem salvos com sucesso!');
                         confetti({ particleCount: 30, spread: 40 });
                       }} 
-                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 font-bold text-white shadow active:scale-[0.98]"
+                      className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 font-bold text-white shadow active:scale-[0.98]"
                     >
                       Salvar Alterações do PIX
                     </button>
