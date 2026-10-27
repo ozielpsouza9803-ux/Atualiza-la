@@ -526,8 +526,8 @@ const INITIAL_PROFILES: any[] = [
   {
     id: DEFAULT_ADMIN_PROFILE_ID,
     name: 'Lar Esperança - Gestão Central',
-    email: 'contato@laresperanca.org',
-    phone: '(11) 98765-4321',
+    email: 'ozielpsouza9803@gmail.com',
+    phone: '(21) 99371-9730',
     role: 'admin',
     bio: 'Coordenação e gestão central das crianças, apadrinhamentos e acolhimento.',
     photo_path: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop',
@@ -1555,7 +1555,7 @@ export default function App() {
       const saved = localStorage.getItem('childrenList');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length >= 10) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed;
         }
       }
@@ -1614,19 +1614,9 @@ export default function App() {
   const [galleryItems, setGalleryItems] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('galleryItems');
-      return saved ? JSON.parse(saved) : [
-        'https://images.unsplash.com/photo-1544717305-2782549b5136?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=300&h=300&fit=crop',
-      ];
+      return saved ? JSON.parse(saved) : [];
     } catch {
-      return [
-        'https://images.unsplash.com/photo-1544717305-2782549b5136?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=300&h=300&fit=crop',
-        'https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=300&h=300&fit=crop',
-      ];
+      return [];
     }
   });
   const [galleryRecords, setGalleryRecords] = useState<GalleryPhotoRecord[]>(() => {
@@ -1761,7 +1751,7 @@ export default function App() {
             : (k.image || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop');
 
           const familyProf = (data.profiles || []).find((p: any) => p.id === k.family_id);
-          const familyEmail = familyProf?.email || k.family_email || '';
+          const familyEmail = familyProf?.email || k.profiles?.email || k.family_email || '';
 
           return {
             id: k.id,
@@ -7847,6 +7837,8 @@ export default function App() {
                         setNewChildShoeSize('');
                         setNewChildClothesSize('');
                         setNewChildImage('');
+                        setNewChildBirthDate('2016-01-01');
+                        setNewChildAge(8);
                         confetti({ particleCount: 50, spread: 50 });
 
                         // 3. Sincronizar com Supabase em segundo plano
@@ -9366,6 +9358,12 @@ export default function App() {
                             const savedChildName = newChildName;
                             setNewChildName('');
                             setNewChildLetter('');
+                            setNewChildImage('');
+                            setNewChildDesiredGift('');
+                            setNewChildShoeSize('');
+                            setNewChildClothesSize('');
+                            setNewChildBirthDate('2016-01-01');
+                            setNewChildAge(8);
                             confetti({ particleCount: 50, spread: 50 });
 
                             // Sincronizar com Supabase

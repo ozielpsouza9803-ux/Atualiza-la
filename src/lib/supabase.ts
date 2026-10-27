@@ -75,7 +75,7 @@ export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null>
   // 2. Consulta direta via cliente Supabase com tratamento individual para cada tabela
   try {
     const [kidsResult, giftsResult, settingsResult, galleryResult, profilesResult] = await Promise.allSettled([
-      supabase.from('kids').select('*').order('created_at', { ascending: false }),
+      supabase.from('kids').select('*, profiles(email)').order('created_at', { ascending: false }),
       supabase.from('gifts').select('*'),
       supabase.from('site_settings').select('*').limit(1),
       supabase.from('gallery').select('*').order('sort_order', { ascending: true }),
