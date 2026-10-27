@@ -19,18 +19,38 @@ function sanitizeSupabaseUrl(rawUrl?: string): string {
 function sanitizeSupabaseKey(rawKey?: string, fallback = ''): string {
   if (!rawKey) return fallback;
   const cleaned = rawKey.trim().split(/\s+/)[0];
+  if (
+    cleaned === 'SUPABASE_SERVICE_ROLE_KEY' || 
+    cleaned === 'ADMIN_API_SECRET' || 
+    cleaned === 'sb_secret_key' ||
+    cleaned.startsWith('SUPABASE_') ||
+    cleaned.length < 20
+  ) {
+    return fallback;
+  }
   return cleaned || fallback;
+}
+
+function isValidJwt(token?: string): boolean {
+  if (!token) return false;
+  const parts = token.trim().split('.');
+  return parts.length === 3 && parts[0].length > 10;
 }
 
 const supabaseUrl = sanitizeSupabaseUrl(process.env.VITE_SUPABASE_URL);
 const anonKey = sanitizeSupabaseKey(process.env.VITE_SUPABASE_ANON_KEY, DEFAULT_SUPABASE_ANON_KEY);
-const serviceRoleKey = sanitizeSupabaseKey(process.env.SUPABASE_SERVICE_ROLE_KEY, '');
+const rawServiceKey = sanitizeSupabaseKey(process.env.SUPABASE_SERVICE_ROLE_KEY, '');
+const serviceRoleKey = isValidJwt(rawServiceKey) ? rawServiceKey : '';
 
 if (!process.env.VITE_SUPABASE_URL) {
   console.warn('VITE_SUPABASE_URL is not set in env, using default project URL:', supabaseUrl);
 }
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('SUPABASE_SERVICE_ROLE_KEY is not set in env - serverSupabase will fall back to anon key or null for proxy actions');
+if (!serviceRoleKey) {
+  if (rawServiceKey) {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY contains a placeholder or non-JWT value. Server will use anon client safely.');
+  } else {
+    console.warn('SUPABASE_SERVICE_ROLE_KEY is not set in env - serverSupabase will use anon key for proxy actions');
+  }
 }
 
 console.log('DEBUG: Using Supabase URL:', supabaseUrl);
@@ -40,7 +60,7 @@ const serverSupabase = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey
 // Middleware de autorização robusto para rotas administrativas do painel
 const authorizeAdmin = (req: any, res: any, next: any) => {
   const adminSecret = req.headers['x-admin-secret'];
-  if (!process.env.ADMIN_API_SECRET || adminSecret === process.env.ADMIN_API_SECRET || adminSecret === 'lar-esperanca-admin-secret' || serverSupabase) {
+  if (!process.env.ADMIN_API_SECRET || adminSecret === process.env.ADMIN_API_SECRET || adminSecret === 'lar-esperanca-admin-secret') {
     next();
   } else {
     res.status(403).json({ error: 'Unauthorized: Forbidden.' });

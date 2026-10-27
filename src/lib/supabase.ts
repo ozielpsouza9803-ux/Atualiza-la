@@ -14,7 +14,14 @@ function getCleanSupabaseConfig() {
   const rawKey = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY)
     ? String(import.meta.env.VITE_SUPABASE_ANON_KEY).trim()
     : '';
-  const anonKey = rawKey ? rawKey.split(/\s+/)[0] : DEFAULT_SUPABASE_ANON_KEY;
+  const firstToken = rawKey ? rawKey.split(/\s+/)[0] : '';
+  const isInvalidPlaceholder = !firstToken || 
+    firstToken === 'SUPABASE_SERVICE_ROLE_KEY' || 
+    firstToken === 'ADMIN_API_SECRET' || 
+    firstToken.startsWith('SUPABASE_') || 
+    firstToken.length < 20;
+
+  const anonKey = isInvalidPlaceholder ? DEFAULT_SUPABASE_ANON_KEY : firstToken;
 
   return { cleanUrl, anonKey };
 }
@@ -55,11 +62,13 @@ export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null>
     const apiRes = await fetch('/api/supabase/data', {
       headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
     });
-    if (apiRes.ok) {
-      const json = await apiRes.json();
-      if (json && typeof json === 'object') {
+    const contentType = apiRes.headers.get('content-type') || '';
+    // Garante que é JSON e não página HTML de redirecionamento de hospedagem estática
+    if (apiRes.ok && contentType.includes('application/json')) {
+      const json = await apiRes.json().catch(() => null);
+      if (json && typeof json === 'object' && Array.isArray(json.kids) && json.kids.length > 0) {
         return {
-          kids: Array.isArray(json.kids) ? json.kids : [],
+          kids: json.kids,
           gifts: Array.isArray(json.gifts) ? json.gifts : [],
           siteSettings: json.siteSettings || null,
           gallery: Array.isArray(json.gallery) ? json.gallery : [],
@@ -69,13 +78,14 @@ export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null>
       }
     }
   } catch {
-    // API backend não disponível, prossegue com consulta direta pelo cliente Supabase
+    // API backend não disponível ou hospedagem estática, prossegue com consulta direta pelo cliente Supabase
   }
 
   // 2. Consulta direta via cliente Supabase com tratamento individual para cada tabela
+  // NOTA: Consulta em 'kids' usa select('*') sem join inválido com profiles(email) para compatibilidade plena
   try {
     const [kidsResult, giftsResult, settingsResult, galleryResult, profilesResult] = await Promise.allSettled([
-      supabase.from('kids').select('*, profiles(email)').order('created_at', { ascending: false }),
+      supabase.from('kids').select('*').order('created_at', { ascending: false }),
       supabase.from('gifts').select('*'),
       supabase.from('site_settings').select('*').limit(1),
       supabase.from('gallery').select('*').order('sort_order', { ascending: true }),
