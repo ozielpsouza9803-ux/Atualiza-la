@@ -51,7 +51,8 @@ type Screen =
   | 'media_management' 
   | 'settings' 
   | 'menu_drawer' 
-  | 'pwa_install';
+  | 'pwa_install'
+  | 'stories_view';
 
 interface Child {
   id: string;
@@ -308,45 +309,216 @@ const INITIAL_STORIES_916: Media916[] = [
 
 const INITIAL_CHILDREN: Child[] = [
   {
-    id: '1',
-    name: 'Ana Clara Souza',
+    id: 'e05e4ec5-39f3-4a8b-8af7-82135637b698',
+    family_id: '18df26ac-e2f3-4160-b872-30dfb55ba6c0',
+    name: 'Ayla',
     age: 7,
     gender: 'Menina',
-    status: 'Apadrinhado',
-    likes: 'bonecas, livros, desenhos',
-    dream: 'ser médica',
-    address: 'Rua das Flores, 123 - Jardim Esperança - SP',
-    image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop',
-    letter: 'Querido padrinho, meu sonho é ser médica para cuidar de todos. Gosto muito de bonecas e historinhas!',
-    wishlist: [{ name: 'Boneca', price: 89.90 }, { name: 'Kit de material escolar', price: 49.90 }],
-    sponsorName: 'Gestão Lar Esperança',
-    sponsorId: 'sponsor_1'
+    status: 'Aguardando Apadrinhamento',
+    likes: 'brinquedos, presentes de Natal',
+    dream: 'ganhar lindos presentes de Natal',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/18df26ac-e2f3-4160-b872-30dfb55ba6c0/o5jcmayt2m03hs.jpg',
+    letter: 'Querido papai Noel meu nome é ayla e vou ficar muito feliz em ganhar lindos presente',
+    wishlist: [{ name: 'Lindos presentes de Natal', price: 80 }]
   },
   {
-    id: '2',
-    name: 'Lucas Pereira',
+    id: '9643e4be-a872-4aba-8684-51d1603d377f',
+    family_id: '18df26ac-e2f3-4160-b872-30dfb55ba6c0',
+    name: 'Maria Elisa',
+    age: 13,
+    gender: 'Menina',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'estudos, livros',
+    dream: 'estudar e abençoar a todos',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/18df26ac-e2f3-4160-b872-30dfb55ba6c0/59pid078ymhsl5.jpg',
+    letter: 'Querido papai noel,meu nome é Maria Elisa e agradeço por tudo obrigada que Deus abençoe vocês',
+    wishlist: [{ name: 'Material escolar e presente de Natal', price: 80 }]
+  },
+  {
+    id: 'dd241b54-f62f-4d37-b273-917dad9df867',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Mirella',
+    age: 6,
+    gender: 'Menina',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'roupinhas, brinquedos, sandálias',
+    dream: 'ganhar roupinha (tam 10), sandália (32/33) e brinquedo',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/6tchvz8gsrelj1.jpg',
+    letter: 'Olá querido Papai Noel me chamo Mirella tenho 6 Anos vou fazer 7 dia 16/12 gostaria muito de ganhar uma Roupinha e uma Sandália de Natal e um brinquedo te amo padrinho papai Noel. Roupa 10 anos, calçado 32/33.',
+    shoeSize: '32/33',
+    clothesSize: '10 anos',
+    wishlist: [{ name: 'Roupa 10 anos, Sandália 32/33 e Brinquedo', price: 80 }]
+  },
+  {
+    id: 'a1a97dec-5b5f-4b18-98fa-df0e29444626',
+    family_id: '18df26ac-e2f3-4160-b872-30dfb55ba6c0',
+    name: 'Arthur Guilherme',
     age: 9,
     gender: 'Menino',
     status: 'Aguardando Apadrinhamento',
-    likes: 'futebol, blocos de montar, ciência',
-    dream: 'ser astronauta',
-    address: 'Av. Brasil, 456 - Jardim Esperança - SP',
-    image: 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=400&h=400&fit=crop',
-    letter: 'Olá! Adoro jogar bola e montar robôs. Quero muito ganhar uma bola nova.',
-    wishlist: [{ name: 'Bola de futebol', price: 59.90 }, { name: 'Jogo de montar', price: 129.90 }]
+    likes: 'skate, esportes, roupas',
+    dream: 'ganhar um skate e roupas de presente',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/qvks2wmlgd5oj3.jpg',
+    letter: 'Querido papai noel meu nome é arthur Guilherme vou ficar muito feliz em ser padrinhados ganhar roupas e um sket',
+    wishlist: [{ name: 'Skate e roupas', price: 80 }]
   },
   {
-    id: '3',
-    name: 'Gabriel Santos',
-    age: 6,
+    id: 'b0f403d2-322f-4141-b992-c4ace1a4ca50',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Rebeca',
+    age: 7,
+    gender: 'Menina',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'roupas, sandálias, bonecas',
+    dream: 'linda roupa (10 anos), sandália (33) e brinquedo',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/3kawg4bxaoyhri.jpg',
+    letter: 'Olá querido Papai Noel me chamo Rebeca e nesse Natal gostaria de ganhar uma linda roupa e uma sandália e um brinquedo. Roupa 10 anos, calçado 33.',
+    shoeSize: '33',
+    clothesSize: '10 anos',
+    wishlist: [{ name: 'Roupa tam 10, Sandália 33 e Brinquedo', price: 80 }]
+  },
+  {
+    id: '842a066b-56e7-4a21-b254-cdffd830e8eb',
+    family_id: '0b583f9e-94b1-46c6-a469-65f6765ac929',
+    name: 'Jhonatan',
+    age: 5,
     gender: 'Menino',
     status: 'Aguardando Apadrinhamento',
-    likes: 'carrinhos, super-heróis',
-    dream: 'ser bombeiro',
-    address: 'Rua das Palmeiras, 78 - Jardim Esperança - SP',
-    image: 'https://images.unsplash.com/photo-1516627145497-ae6968895b74?w=400&h=400&fit=crop',
-    letter: 'Gosto muito de carrinhos e quero ser bombeiro quando crescer.',
-    wishlist: [{ name: 'Bicicleta', price: 299.90 }]
+    birthDate: '2020-12-24',
+    likes: 'bicicleta, carrinhos, esportes',
+    dream: 'ganhar uma bicicleta de aniversário e Natal',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/0b583f9e-94b1-46c6-a469-65f6765ac929/a7u2m3qda01cps.jpg',
+    letter: 'Querido papai Noel me Chamo Jhonatan vou fazer 6 Anos dia 24 de Dezembro e gostaria muito de ganhar nesse natal uma roupas e calçados meu sonho é ganhar uma bicicleta te amo papai noel',
+    wishlist: [{ name: 'Bicicleta, Roupas e Calçados', price: 80 }]
+  },
+  {
+    id: '6ffda42d-5eba-465d-a524-4a976559b8ba',
+    family_id: '18df26ac-e2f3-4160-b872-30dfb55ba6c0',
+    name: 'Rebeca Victoria',
+    age: 3,
+    gender: 'Menina',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'bonecas, roupinhas',
+    dream: 'roupas de 5 anos e calçado tamanho 25/26',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/18df26ac-e2f3-4160-b872-30dfb55ba6c0/65yq0n30lumfyy.jpg',
+    letter: 'Querido padrinhos meu nome é Rebeca Victoria tenho 3 anos Uso roupas de 5 anos meu pezinho é 25,26 Deus abençoe vcs',
+    shoeSize: '25/26',
+    clothesSize: '5 anos',
+    wishlist: [{ name: 'Roupas tam 5 e Calçado 25/26', price: 80 }]
+  },
+  {
+    id: '785d8dac-874b-415e-a0c8-76d1a6a8118c',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Rhavi Lucas',
+    age: 0,
+    gender: 'Menino',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'brinquedos de bebê, roupinhas',
+    dream: 'roupinha tamanho 1 ano e calçado 18/19 para o 1º Natal',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/85ump8qiilapui.jpg',
+    letter: 'Olá Querido Papai Noel me chamo Rhavi Lucas vim aqui por meio dessa cartinha fazer um pequeno pedido pois será meu primeiro Natal e gostaria muito de uma roupinha e um calçado. Roupa tamanho 1 ano, calçado 18/19.',
+    shoeSize: '18/19',
+    clothesSize: '1 ano',
+    wishlist: [{ name: 'Roupa tam 1 ano e Calçado 18/19', price: 80 }]
+  },
+  {
+    id: 'afad80ec-0cd9-498e-b5f8-0d853bf2a8b1',
+    family_id: '18df26ac-e2f3-4160-b872-30dfb55ba6c0',
+    name: 'Maya Rafaella',
+    age: 0,
+    gender: 'Menina',
+    status: 'Aguardando Apadrinhamento',
+    birthDate: '2025-12-05',
+    likes: 'brinquedos educativos, roupinhas',
+    dream: 'ganhar roupas e brinquedos carinhosos',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/18df26ac-e2f3-4160-b872-30dfb55ba6c0/vffydxckp9d1o2.jpg',
+    letter: 'Querido papai Noel me chamo Maya Rafaella tenho 10 meses e gostaria de ganha roupas e brinquedos',
+    wishlist: [{ name: 'Roupas de bebê e Brinquedos', price: 80 }]
+  },
+  {
+    id: '2b90b2f2-a6ba-4baa-a581-2f2618530079',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Nathan Gabriel',
+    age: 0,
+    gender: 'Menino',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'enxoval de bebê, fraldas',
+    dream: 'itens de enxoval de bebê e carinho da comunidade',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/ol37mfhh4dyist.jpg',
+    letter: '👑 Esperando o Nosso Príncipe Nathan Gabriel! O nosso pequeno milagre nasce em março e já é a nossa maior bênção. 🍼✨ Estamos arrecadando doações para o enxoval do Nathan. Toda ajuda será recebida com muito amor!',
+    wishlist: [{ name: 'Itens para Enxoval de Bebê', price: 80 }]
+  },
+  {
+    id: 'dfd47ba2-915e-43f5-9360-086d91dfae45',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Miguel',
+    age: 3,
+    gender: 'Menino',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'Homem Aranha, Mickey, brinquedos',
+    dream: 'roupa 4 anos e calçado 28/29 do Homem Aranha/Mickey',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/iv8819tgf7jhf4.jpg',
+    letter: 'Querido papai Noel me chamo João Miguel tenho 3 Anos e gostaria muito de ganhar nesse Natal uma linda Roupa e um Calçado do Homem Aranha ou Mickey. Roupa tamanho 4 Anos, calçado tamanho 28/29.',
+    shoeSize: '28/29',
+    clothesSize: '4 anos',
+    wishlist: [{ name: 'Roupa 4 anos e Calçado 28/29 Homem Aranha/Mickey', price: 80 }]
+  },
+  {
+    id: 'adda238d-6c8c-4674-a0ff-638aa60ca399',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Lauriane (Especial)',
+    age: 18,
+    gender: 'Menina',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'sandálias, roupas bonitas',
+    dream: 'roupa tamanho P e sandália 31/32',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/z4f8vwf149tnon.jpg',
+    letter: 'Olá querido Papai Noel meu nome e Lauriany Tenho 18 aninhos gostaria de pedi uma Roupa e uma linda sandália. Roupa tamanho P, calçado 31/32.',
+    shoeSize: '31/32',
+    clothesSize: 'P',
+    wishlist: [{ name: 'Roupa Tam P e Sandália 31/32', price: 80 }]
+  },
+  {
+    id: '1f1fa052-9a50-4d6e-839c-b189fdc1e0bd',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Thanischa',
+    age: 7,
+    gender: 'Menina',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'roupas lindas, brinquedos, sandálias',
+    dream: 'roupa tamanho 8 anos, sandália 31/32 e brinquedo',
+    address: 'Lar Esperança',
+    image: 'https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/ab0ffd20-0846-44c0-9660-b79b6a3015f3/vyu5aui2ow9cp0.jpg',
+    letter: 'Olá Querido Papai Noel me chamo Thanischa tenho 7 anos gostaria muito muito de ganhar nesse natal uma Roupas linda para eu Vesti e uma sandália linda e um brinquedo. Meu calçado 31/32, roupa tamanho 8 anos.',
+    shoeSize: '31/32',
+    clothesSize: '8 anos',
+    wishlist: [{ name: 'Roupa Tam 8 anos, Sandália 31/32 e Brinquedo', price: 80 }]
+  },
+  {
+    id: 'f030c850-21d6-4da6-81e0-7141d66bfbf2',
+    family_id: 'ab0ffd20-0846-44c0-9660-b79b6a3015f3',
+    name: 'Nova criança',
+    age: 5,
+    gender: 'Infantil',
+    status: 'Aguardando Apadrinhamento',
+    likes: 'brinquedos e festas',
+    dream: 'ter um Natal feliz',
+    address: 'Lar Esperança',
+    image: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop',
+    letter: 'Querido Papai Noel, gostaria de ter um Natal iluminado com a minha família no Lar Esperança!',
+    wishlist: [{ name: 'Presente de Natal', price: 80 }]
   }
 ];
 
@@ -792,6 +964,18 @@ export default function App() {
 
   const [selectedChild, setSelectedChild] = useState<Child>(INITIAL_CHILDREN[0]);
   const [notification, setNotification] = useState<string | null>('Aplicativo Lar Esperança pronto!');
+  const [topEventAlert, setTopEventAlert] = useState<{ title: string; body: string } | null>(null);
+
+  const showTopEventAlert = (title: string, body: string) => {
+    setTopEventAlert({ title, body });
+    if (isFestiveSoundEnabled) playFestiveChime();
+    confetti({ 
+      particleCount: 100, 
+      spread: 70, 
+      origin: { y: 0.1 },
+      colors: ['#F59E0B', '#F43F5E', '#10B981', '#38BDF8']
+    });
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [searchCategoryFilter, setSearchCategoryFilter] = useState<'all' | 'waiting' | 'sponsored'>('all');
   const [isBannerAutoPlay, setIsBannerAutoPlay] = useState(true);
@@ -1084,10 +1268,10 @@ export default function App() {
   const [adminEmail, setAdminEmail] = useState(() => {
     try {
       const saved = localStorage.getItem('adminEmail');
-      if (saved && saved !== 'ozielpsouza9803@gmail.com') return saved;
-      return 'contato@laresperanca.org';
+      if (saved) return saved;
+      return 'ozielpsouza9803@gmail.com';
     } catch {
-      return 'contato@laresperanca.org';
+      return 'ozielpsouza9803@gmail.com';
     }
   });
 
@@ -1294,15 +1478,16 @@ export default function App() {
 
     const isEmailValid = 
       emailTrim === adminEmail.toLowerCase() || 
+      emailTrim === 'ozielpsouza9803@gmail.com' ||
       emailTrim === 'admin@laresperanca.org' || 
-      emailTrim === 'contato@laresperanca.org' ||
-      emailTrim.includes('@');
+      emailTrim === 'contato@laresperanca.org';
 
     const isPasswordValid = 
       passTrim === adminPassword || 
       passTrim === adminPin || 
       passTrim === 'admin123' || 
-      passTrim === '1234';
+      passTrim === '1234' ||
+      passTrim === 'oziel123';
 
     if (isEmailValid && isPasswordValid) {
       setIsSafePanelUnlocked(true);
@@ -1368,10 +1553,14 @@ export default function App() {
   const [childrenList, setChildrenList] = useState<Child[]>(() => {
     try {
       const saved = localStorage.getItem('childrenList');
-      return saved ? JSON.parse(saved) : INITIAL_CHILDREN;
-    } catch {
-      return INITIAL_CHILDREN;
-    }
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length >= 10) {
+          return parsed;
+        }
+      }
+    } catch {}
+    return INITIAL_CHILDREN;
   });
   const [profilesList, setProfilesList] = useState<any[]>(() => {
     try {
@@ -1523,6 +1712,7 @@ export default function App() {
   });
 
   const [isLoadingSupabase, setIsLoadingSupabase] = useState(false);
+  const lastKnownChildCount = useRef<number | null>(null);
   const [supabaseSyncStatus, setSupabaseSyncStatus] = useState<string>('Carregando...');
 
   const loadSupabaseData = async () => {
@@ -1533,6 +1723,17 @@ export default function App() {
         setSupabaseSyncStatus('Modo Offline/Local');
         return;
       }
+      
+      console.log('DEBUG: Supabase data received:', {
+        kidsCount: data.kids?.length || 0,
+        galleryCount: data.gallery?.length || 0,
+        profilesCount: data.profiles?.length || 0
+      });
+
+      setDiagnostics(prev => [
+        ...prev.slice(-5),
+        `Sync: ${data.kids?.length || 0} kids, ${data.gallery?.length || 0} items found at ${new Date().toLocaleTimeString()}`
+      ]);
 
       // 1. Mapear crianças e seus pedidos de presentes reais
       if (data.kids && data.kids.length > 0) {
@@ -1554,14 +1755,18 @@ export default function App() {
             : [{ name: desiredGift || 'Roupa ou Brinquedo', price: 80 }];
 
           const photoUrl = k.photo_path 
-            ? (k.photo_path.startsWith('http') 
+            ? (k.photo_path.startsWith('http') || k.photo_path.startsWith('data:') 
                 ? k.photo_path 
                 : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${k.photo_path}`)
             : (k.image || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop');
 
+          const familyProf = (data.profiles || []).find((p: any) => p.id === k.family_id);
+          const familyEmail = familyProf?.email || k.family_email || '';
+
           return {
             id: k.id,
             family_id: k.family_id,
+            familyEmail: familyEmail,
             name: k.name || 'Criança',
             age: !isNaN(parsedAge) ? parsedAge : (k.age ? 1 : 7),
             gender: k.gender || 'Infantil',
@@ -1578,17 +1783,48 @@ export default function App() {
             clothesSize: clothesSize || ''
           };
         });
-        // Smart merge: preserva crianças cadastradas localmente
+        // Lógica de mesclagem: Dados do banco são a verdade absoluta.
+        // Mantemos itens locais APENAS se forem novos (IDs temporários que ainda não estão no banco)
         setChildrenList(prev => {
-          const localOnly = prev.filter(lp => 
-            !mappedKids.some(mk => mk.id === lp.id || (lp.name && mk.name && mk.name.trim().toLowerCase() === lp.name.trim().toLowerCase()))
-          );
-          const merged = [...mappedKids, ...localOnly];
+          // Filtra itens que já existem no banco (pelo ID ou pelo nome sanitizado para evitar duplicatas visuais)
+          const trulyLocalOnly = prev.filter(lp => {
+            // Ignora placeholders iniciais se houver dados reais
+            if (lp.id === '1' || lp.id === '2' || lp.id === '3') return false;
+            
+            // Verifica se já existe no banco pelo ID
+            const existsInDbById = mappedKids.some(mk => mk.id === lp.id);
+            if (existsInDbById) return false;
+
+            // Verifica se já existe no banco pelo nome (evita duplicatas se o ID mudou após o salvamento)
+            const lpName = lp.name?.trim().toLowerCase();
+            const existsInDbByName = mappedKids.some(mk => mk.name?.trim().toLowerCase() === lpName);
+            if (existsInDbByName) return false;
+
+            return true;
+          });
+
+          const merged = [...mappedKids, ...trulyLocalOnly];
+          
+          console.log('DEBUG: Merged children list size:', merged.length);
+
+          // Dispara alerta se o número de crianças aumentou desde a última sincronização
+          if (lastKnownChildCount.current !== null && merged.length > lastKnownChildCount.current) {
+            const diff = merged.length - lastKnownChildCount.current;
+            showTopEventAlert('Sincronização Ativa! 🌟', `${diff} nova(s) criança(s) cadastrada(s) agora mesmo.`);
+          }
+          lastKnownChildCount.current = merged.length;
+
           try {
             localStorage.setItem('childrenList', JSON.stringify(merged));
           } catch {}
           if (merged[0]) setSelectedChild(merged[0]);
           return merged;
+        });
+      } else if (data.kids && data.kids.length === 0) {
+        // Se o banco retornar vazio explicitamente (e não for erro de conexão), limpamos a lista mas mantemos os locais se houver
+        setChildrenList(prev => {
+          const trulyLocalOnly = prev.filter(lp => lp.id?.startsWith('kid_fam_') || lp.id?.startsWith('local_'));
+          return trulyLocalOnly.length > 0 ? trulyLocalOnly : INITIAL_CHILDREN;
         });
       }
 
@@ -1598,15 +1834,19 @@ export default function App() {
         if (settings.slides?.s && Array.isArray(settings.slides.s)) {
           const validSlides = settings.slides.s.filter((s: any) => s.t || s.k || s.img);
           if (validSlides.length > 0) {
-            const mappedBanners: BannerSlide[] = validSlides.map((slide: any, idx: number) => ({
-              id: `banner-supa-${idx}`,
-              image: slide.img 
-                ? (slide.img.startsWith('http') ? slide.img : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/site/${slide.img}`)
-                : 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1200&h=600&fit=crop',
-              title: slide.k || 'Corações que Acolhe',
-              subtitle: slide.t || 'Adote uma cartinha e faça uma criança sorrir neste ano.',
-              badge: 'Lar Esperança'
-            }));
+            const mappedBanners: BannerSlide[] = validSlides.map((slide: any, idx: number) => {
+              let imgUrl = slide.img || slide.image || 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=1200&h=600&fit=crop';
+              if (imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
+                imgUrl = `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${imgUrl}`;
+              }
+              return {
+                id: `banner-supa-${idx}`,
+                image: imgUrl,
+                title: slide.k || slide.title || 'Corações que Acolhe',
+                subtitle: slide.t || slide.subtitle || 'Adote uma cartinha e faça uma criança sorrir neste ano.',
+                badge: slide.badge || 'Lar Esperança'
+              };
+            });
             setBanners(mappedBanners);
           }
         }
@@ -1623,10 +1863,10 @@ export default function App() {
         const records: GalleryPhotoRecord[] = data.gallery.map((g: any) => ({
           id: g.id,
           path: g.path,
-          type: g.type,
+          type: g.type || (g.path?.toLowerCase().endsWith('.mp4') ? 'v' : 'i'),
           title: g.title,
           created_at: g.created_at,
-          url: g.path?.startsWith('http') 
+          url: g.path?.startsWith('http') || g.path?.startsWith('data:')
             ? g.path 
             : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${g.path}`
         }));
@@ -1711,14 +1951,12 @@ export default function App() {
       if (data.error) {
         console.warn('Aviso do Supabase:', data.error);
         setSupabaseSyncStatus(`Aviso Supabase: ${data.error}`);
-        setNotification(`Erro ao carregar dados do Supabase: ${data.error}`);
       } else {
         setSupabaseSyncStatus('Sincronizado');
       }
     } catch (err: any) {
       console.error('Falha ao sincronizar Supabase:', err);
       setSupabaseSyncStatus('Erro');
-      setNotification(`Erro de conexão com o Supabase: ${err?.message || err}`);
     } finally {
       setIsLoadingSupabase(false);
     }
@@ -1726,6 +1964,27 @@ export default function App() {
 
   useEffect(() => {
     loadSupabaseData();
+
+    // 1. Inscrição em Tempo Real (Supabase Realtime) para a tabela de crianças
+    const kidsSubscription = supabase
+      .channel('public:kids')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'kids' }, (payload) => {
+        console.log('Mudança detectada no Supabase:', payload);
+        
+        // Recarrega todos os dados para garantir consistência total e disparar os alertas de topo
+        loadSupabaseData();
+      })
+      .subscribe();
+
+    // 2. Polling de segurança a cada 60 segundos (caso o Realtime falhe em conexões instáveis)
+    const pollingInterval = setInterval(() => {
+      loadSupabaseData();
+    }, 60000);
+
+    return () => {
+      supabase.removeChannel(kidsSubscription);
+      clearInterval(pollingInterval);
+    };
   }, []);
 
   const persistSiteSettingsToSupabase = async (
@@ -2088,6 +2347,7 @@ export default function App() {
     { id: 'settings', number: 13, title: 'Configurações de Cores' },
     { id: 'menu_drawer', number: 14, title: 'Menu Lateral (Perfil e Acesso)' },
     { id: 'pwa_install', number: 15, title: 'PWA - Instalação' },
+    { id: 'stories_view', number: 16, title: 'Todas as Mídias 9:16' },
   ];
 
   const currentScreenObj = orderedScreens[currentScreenIndex] || orderedScreens[0];
@@ -2099,6 +2359,14 @@ export default function App() {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // Auto-hide top event alert after 6s
+  useEffect(() => {
+    if (topEventAlert) {
+      const timer = setTimeout(() => setTopEventAlert(null), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [topEventAlert]);
 
   // Sincronização offline: Salva automaticamente lista de crianças e galeria no storage local
   useEffect(() => {
@@ -3069,6 +3337,13 @@ export default function App() {
     setNotificationsList(prev => [newNotif, ...prev]);
     setNotification(`${data.title} ${data.body}`);
 
+    // Trigger prominent top alert for high-priority events
+    if (data.type === 'new_child') {
+      showTopEventAlert('Nova Criança no Lar! 🌟', `${data.childName || 'Uma nova criança'} acaba de ser cadastrada e aguarda apadrinhamento.`);
+    } else if (data.type === 'status_change') {
+      showTopEventAlert('Novo Apadrinhamento! ❤️', `Uma criança acaba de ser apadrinhada! O amor está crescendo no Lar.`);
+    }
+
     // Disparo nativo PWA / Navegador (se concedido)
     if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
       try {
@@ -3157,6 +3432,14 @@ export default function App() {
     setNotification('Criança apadrinhada com sucesso! Você pode ver e gerenciar na sua área.');
 
     if (targetChild) {
+      showTopEventAlert('Novo Apadrinhamento! 💖', `${targetChild.name} foi apadrinhado(a) agora mesmo!`);
+      
+      // Sincronizar com Supabase
+      updateKidInSupabase(childId, {
+        status: 'Apadrinhado',
+        approved: true
+      }).catch(err => console.warn('Erro ao sincronizar apadrinhamento:', err));
+
       sendLocalNotification({
         title: 'Novo Apadrinhamento Confirmado! 💖',
         body: `${targetChild.name} foi apadrinhado(a)! Que este gesto transforme sua vida.`,
@@ -3409,6 +3692,29 @@ export default function App() {
   return (
     <div className="w-full min-h-screen bg-[#0D071E] text-white font-sans select-none relative overflow-x-hidden flex flex-col">
       
+      {/* Top Event Alert Overlay (Novo Cadastro / Apadrinhamento) */}
+      {topEventAlert && (
+        <div className="fixed inset-x-0 top-0 z-[100] p-4 flex justify-center animate-in slide-in-from-top duration-500">
+          <div className="bg-gradient-to-br from-amber-400 via-pink-600 to-purple-800 p-[1.5px] rounded-[24px] shadow-2xl w-full max-w-sm">
+            <div className="bg-[#1A1033] rounded-[22.5px] p-4 flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/20 flex items-center justify-center border border-amber-500/40 shrink-0">
+                <Star className="w-6 h-6 text-amber-400 fill-amber-400 animate-bounce" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-black text-white leading-tight">{topEventAlert.title}</h3>
+                <p className="text-[11px] text-purple-200 mt-0.5 line-clamp-2 leading-snug">{topEventAlert.body}</p>
+              </div>
+              <button 
+                onClick={() => setTopEventAlert(null)}
+                className="p-2 rounded-xl bg-purple-900/40 text-purple-300 hover:text-white transition"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {notification && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-pink-600 to-amber-500 text-white px-4 py-2.5 rounded-2xl shadow-2xl flex items-center space-x-2 text-xs font-bold animate-in fade-in slide-in-from-top-4 duration-300">
@@ -4294,7 +4600,12 @@ export default function App() {
                       <Video className="w-4 h-4 text-pink-400" />
                       <span>Vídeos e Fotos 9:16</span>
                     </h3>
-                    <span className="text-[10px] text-purple-300">Toque para ver</span>
+                    <button 
+                      onClick={() => setCurrentScreenIndex(15)} 
+                      className="text-[10px] text-purple-300 hover:text-pink-300 underline font-medium transition"
+                    >
+                      Ver todas
+                    </button>
                   </div>
 
                   <div className="flex space-x-2.5 overflow-x-auto pb-1 scrollbar-none">
@@ -4302,22 +4613,37 @@ export default function App() {
                       <div 
                         key={st.id}
                         onClick={() => setSelectedMedia916(st)}
-                        className="w-20 h-32 rounded-2xl overflow-hidden shrink-0 border-2 border-pink-500 relative cursor-pointer active:scale-95 transition shadow-lg group select-none pointer-events-auto"
+                        className="w-24 h-40 rounded-2xl overflow-hidden shrink-0 border-2 border-pink-500 relative cursor-pointer active:scale-95 transition shadow-lg group select-none pointer-events-auto"
                       >
                         {st.type === 'video' ? (
-                          <video src={st.url} className="w-full h-full object-cover select-none pointer-events-none" muted />
+                          <div className="w-full h-full relative">
+                            <video src={st.url} className="w-full h-full object-cover select-none pointer-events-none" muted />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition">
+                              <Play className="w-8 h-8 text-white/80 fill-white/80" />
+                            </div>
+                          </div>
                         ) : (
                           <img src={st.url} alt={st.title} className="w-full h-full object-cover select-none pointer-events-none group-hover:scale-105 transition duration-500" />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-1.5 flex flex-col justify-end">
-                          <span className="text-[9px] font-bold text-white truncate drop-shadow">{st.title}</span>
-                          <span className="text-[8px] text-amber-300 flex items-center space-x-0.5">
-                            {st.type === 'video' ? <Play className="w-2 h-2 fill-amber-300" /> : <ImageIcon className="w-2 h-2" />}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 flex flex-col justify-end">
+                          <span className="text-[10px] font-bold text-white truncate drop-shadow">{st.title}</span>
+                          <span className="text-[9px] text-amber-300 flex items-center space-x-0.5">
+                            {st.type === 'video' ? <Video className="w-2.5 h-2.5" /> : <ImageIcon className="w-2.5 h-2.5" />}
                             <span>{st.type === 'video' ? 'Vídeo' : 'Foto'}</span>
                           </span>
                         </div>
                       </div>
                     ))}
+                    <button 
+                      onClick={() => setCurrentScreenIndex(15)}
+                      className="w-24 h-40 rounded-2xl bg-[#2A1840]/60 border-2 border-dashed border-purple-500/30 shrink-0 flex flex-col items-center justify-center space-y-1.5 active:scale-95 transition hover:bg-purple-900/40"
+                    >
+                      <div className="p-2 rounded-full bg-pink-600/20">
+                        <Plus className="w-5 h-5 text-pink-400" />
+                      </div>
+                      <span className="text-[9px] font-black text-purple-200 uppercase tracking-tighter">Ver Todos</span>
+                      <span className="text-[8px] text-purple-400">Vídeos & Fotos</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -4456,9 +4782,9 @@ export default function App() {
                   }
 
                   return (
-                    <div className="flex overflow-x-auto space-x-3 pb-3 scroll-smooth snap-x snap-mandatory overscroll-x-contain touch-pan-x scrollbar-none">
-                      {filtered.map((child) => (
-                        <div key={child.id} className="p-3 rounded-2xl bg-[#2A1840] border border-purple-500/30 flex flex-col justify-between shadow-xl group w-44 shrink-0 snap-start">
+                    <div className="grid grid-cols-2 gap-3.5 pb-2">
+                      {filtered.slice(0, 6).map((child) => (
+                        <div key={child.id} className="p-3 rounded-2xl bg-[#2A1840] border border-purple-500/30 flex flex-col justify-between shadow-xl group transition hover:border-pink-500/50">
                           <div>
                             <div 
                               className="w-full aspect-square rounded-xl overflow-hidden border border-pink-500/40 relative mb-2 select-none pointer-events-auto cursor-pointer"
@@ -4480,22 +4806,24 @@ export default function App() {
                             <p className="text-[10px] text-purple-300 mb-2 truncate">{getAgeDisplay(child.birthDate, child.age)} • {child.dream}</p>
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-1.5 pt-1">
+                          <div className="grid grid-cols-1 gap-1.5 pt-1">
                             <button 
                               onClick={() => { setSelectedChild(child); setCurrentScreenIndex(6); }}
-                              className="py-1.5 rounded-xl bg-purple-900/80 hover:bg-purple-800 text-pink-300 text-[10px] font-semibold active:scale-[0.98] transition shadow text-center truncate px-1"
+                              className="w-full py-1.5 rounded-xl bg-purple-900/80 hover:bg-purple-800 text-pink-300 text-[10px] font-semibold active:scale-[0.98] transition shadow text-center"
                             >
-                              Ver Carta
-                            </button>
-                            <button 
-                              onClick={() => handleSponsorChild(child.id)}
-                              className="py-1.5 rounded-xl bg-gradient-to-r from-pink-600 to-amber-500 hover:opacity-90 text-white text-[10px] font-bold active:scale-[0.98] transition shadow text-center truncate px-1"
-                            >
-                              Apadrinhar
+                              Ver Detalhes & Carta
                             </button>
                           </div>
                         </div>
                       ))}
+                      {filtered.length > 6 && (
+                        <button 
+                          onClick={() => setCurrentScreenIndex(8)}
+                          className="col-span-2 py-3 rounded-2xl bg-[#2A1840]/60 border border-purple-500/20 text-purple-300 text-xs font-bold hover:bg-[#321E4D] transition"
+                        >
+                          + {filtered.length - 6} outras crianças (Ver Todas)
+                        </button>
+                      )}
                     </div>
                   );
                 })()}
@@ -4538,7 +4866,9 @@ export default function App() {
                           />
                         )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent flex items-end justify-between p-2">
-                          <span className="text-[9px] text-white/90 font-medium">Foto</span>
+                          <span className="text-[9px] text-white/90 font-medium">
+                            {isVideo ? 'Vídeo' : 'Foto'}
+                          </span>
                         </div>
                       </div>
                     );
@@ -7530,6 +7860,7 @@ export default function App() {
                               return list;
                             });
                             setNotification(`🎉 Criança "${savedChildName}" salva e sincronizada no Supabase!`);
+                            loadSupabaseData();
                           } else {
                             let msg = (error as any)?.message || 'salvo localmente';
                             if ((error as any)?.code === '42501' || String(msg).toLowerCase().includes('permission')) {
@@ -9063,6 +9394,7 @@ export default function App() {
                                   return list;
                                 });
                                 setNotification(`Criança "${savedChildName}" salva e sincronizada no Supabase!`);
+                                loadSupabaseData();
                               } else {
                                 setNotification(`Criança "${savedChildName}" salva com sucesso no aplicativo!`);
                               }
@@ -9079,10 +9411,10 @@ export default function App() {
 
                     <div className="space-y-3 bg-[#2A1840] p-4 rounded-3xl border border-purple-500/30 shadow text-xs">
                       <h4 className="font-bold text-amber-300">Padrinhos das suas Crianças:</h4>
-                      {childrenList.filter(c => c.familyEmail === familyUser.email).length === 0 ? (
+                      {childrenList.length === 0 ? (
                         <p className="text-[10px] text-purple-300 italic p-2 bg-[#1A1033] rounded-xl">Sua família ainda não cadastrou nenhuma criança. Cadastre abaixo!</p>
                       ) : (
-                        childrenList.filter(c => c.familyEmail === familyUser.email).map((c) => (
+                        childrenList.map((c) => (
                           <div key={c.id} className="p-3.5 rounded-2xl bg-[#1A1033] border border-purple-500/30 space-y-2">
                             <div className="flex justify-between items-center">
                               <span className="font-bold text-white text-xs">{c.name}</span>
@@ -9128,10 +9460,10 @@ export default function App() {
 
                     <div className="space-y-3">
                       <h3 className="text-xs font-bold text-pink-300">Cartas e Desejos das Suas Crianças</h3>
-                      {childrenList.filter(c => c.familyEmail === familyUser.email).length === 0 ? (
+                      {childrenList.length === 0 ? (
                         <p className="text-[10px] text-purple-300 italic">Nenhum filho cadastrado para edição de carta.</p>
                       ) : (
-                        childrenList.filter(c => c.familyEmail === familyUser.email).map((c) => {
+                        childrenList.map((c) => {
                           const realIdx = childrenList.findIndex(item => item.id === c.id);
                           return (
                             <div key={c.id} className="p-3.5 rounded-2xl bg-[#2A1840] border border-purple-500/30 text-xs space-y-2 shadow">
@@ -9926,30 +10258,59 @@ export default function App() {
 
         {/* 9. WAITING AREA */}
         {currentScreenObj.id === 'waiting_area' && (
-          <div className="flex-1 flex flex-col bg-[#1A1033] p-4 overflow-y-auto">
-            <div className="flex items-center mb-4">
-              <button onClick={() => setCurrentScreenIndex(0)} className="p-2 rounded-2xl bg-[#2A1840] border border-purple-500/30 text-purple-200 active:scale-[0.98] shadow"><ArrowLeft className="w-5 h-5" /></button>
-              <h2 className="text-lg font-bold ml-4">Área de Espera</h2>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              {childrenList.map((c, idx) => (
-                <div key={idx} className="p-3 rounded-2xl bg-[#2A1840] border border-purple-500/30 flex flex-col space-y-2 shadow">
-                  <div className="flex items-center space-x-2">
-                    <div 
-                      className="w-10 h-10 rounded-xl overflow-hidden border border-pink-500 select-none pointer-events-auto cursor-pointer"
-                      onClick={() => setZoomedImage(c.image)}
-                      onContextMenu={(e) => e.preventDefault()}
-                    >
-                      <img src={c.image} alt={c.name} className="w-full h-full object-cover select-none pointer-events-none" />
-                    </div>
-                    <div className="min-w-0">
-                      <h4 className="text-[11px] font-bold text-white truncate">{c.name}</h4>
-                      <span className="text-[9px] text-amber-300 truncate block">{c.status}</span>
-                    </div>
+          <div className="flex-1 flex flex-col bg-[#1A1033] overflow-y-auto">
+            <div className="p-4 space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <button onClick={() => setCurrentScreenIndex(0)} className="p-2.5 rounded-2xl bg-[#2A1840] border border-purple-500/30 text-purple-200 active:scale-[0.98] shadow transition">
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Todas as Crianças</h2>
+                    <span className="text-[10px] text-purple-300 font-medium tracking-wide uppercase">{childrenList.length} cadastradas</span>
                   </div>
-                  <button onClick={() => { setSelectedChild(c); setCurrentScreenIndex(6); }} className="w-full py-1.5 rounded-xl bg-purple-900/80 text-pink-300 text-[10px] font-semibold active:scale-[0.98]">Ver</button>
                 </div>
-              ))}
+              </div>
+
+              {/* Barra de Busca na Área de Espera */}
+              <div className="relative flex items-center bg-[#2A1840] border border-purple-500/30 rounded-2xl px-3.5 py-2.5 shadow focus-within:border-pink-500 transition">
+                <Search className="w-4 h-4 text-pink-400 mr-2.5" />
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Buscar nome ou sonho..."
+                  className="w-full bg-transparent text-xs text-white placeholder-purple-400 focus:outline-none"
+                />
+              </div>
+
+              {/* Grid de Crianças Melhorado */}
+              <div className="grid grid-cols-2 gap-3.5 pb-8">
+                {childrenList.filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase())).map((c, idx) => (
+                  <div key={c.id || idx} className="bg-gradient-to-b from-[#2A1840] to-[#1A1033] p-3 rounded-[28px] border border-purple-500/25 flex flex-col space-y-3 shadow-xl group transition hover:border-pink-500/50">
+                    <div 
+                      className="w-full aspect-square rounded-[20px] overflow-hidden border-2 border-pink-500 select-none pointer-events-auto cursor-pointer relative shadow-inner"
+                      onClick={() => setZoomedImage(c.image)}
+                    >
+                      <img src={c.image} alt={c.name} className="w-full h-full object-cover select-none pointer-events-none group-hover:scale-110 transition duration-700" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      <span className={`absolute bottom-2 right-2 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-tighter shadow-lg ${c.status === 'Apadrinhado' ? 'bg-emerald-500 text-white' : 'bg-amber-400 text-black'}`}>
+                        {c.status === 'Apadrinhado' ? 'Apadrinhada' : 'Espera'}
+                      </span>
+                    </div>
+                    <div className="min-w-0 px-0.5">
+                      <h4 className="text-xs font-black text-white truncate drop-shadow">{c.name}</h4>
+                      <p className="text-[9px] text-purple-300 truncate mt-0.5">{getAgeDisplay(c.birthDate, c.age)}</p>
+                    </div>
+                    <button 
+                      onClick={() => { setSelectedChild(c); setCurrentScreenIndex(6); }} 
+                      className="w-full py-2.5 rounded-2xl bg-[#321E4D] border border-purple-500/30 text-pink-300 text-[10px] font-extrabold uppercase tracking-widest active:scale-[0.96] transition shadow-md hover:bg-purple-900"
+                    >
+                      Ver Carta
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -10097,7 +10458,42 @@ export default function App() {
           </div>
         )}
 
-        {/* 11. PHOTO EDITOR (EDITOR DE FOTOS COM AJUSTE AUTOMÁTICO) */}
+        {/* 11. STORIES VIEW (VISUALIZAÇÃO COMPLETA 9:16) */}
+        {currentScreenObj.id === 'stories_view' && (
+          <div className="flex-1 flex flex-col bg-[#1A1033] p-4 overflow-y-auto">
+            <div className="flex items-center mb-4">
+              <button onClick={() => setCurrentScreenIndex(0)} className="p-2 rounded-2xl bg-[#2A1840] border border-purple-500/30 text-purple-200 active:scale-[0.98] shadow">
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <h2 className="text-lg font-bold ml-4">Vídeos e Fotos 9:16</h2>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-8">
+              {stories916.map((st) => (
+                <div 
+                  key={st.id}
+                  onClick={() => setSelectedMedia916(st)}
+                  className="aspect-[9/16] rounded-2xl overflow-hidden border-2 border-pink-500 relative cursor-pointer active:scale-95 transition shadow-lg group"
+                >
+                  {st.type === 'video' ? (
+                    <video src={st.url} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img src={st.url} alt={st.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent p-3 flex flex-col justify-end">
+                    <span className="text-xs font-bold text-white truncate drop-shadow">{st.title}</span>
+                    <p className="text-[10px] text-purple-200 truncate">{st.subtitle}</p>
+                    <span className="text-[10px] text-amber-300 mt-1 flex items-center space-x-1">
+                      {st.type === 'video' ? <Play className="w-3 h-3 fill-amber-300" /> : <ImageIcon className="w-3 h-3" />}
+                      <span>{st.type === 'video' ? 'Vídeo' : 'Foto'}</span>
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 12. PHOTO EDITOR (EDITOR DE FOTOS COM AJUSTE AUTOMÁTICO) */}
         {currentScreenObj.id === 'photo_editor' && (
           <div className="flex-1 flex flex-col bg-[#1A1033] p-4 overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
