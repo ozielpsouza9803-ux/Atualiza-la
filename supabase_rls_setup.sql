@@ -1,16 +1,18 @@
 -- ==============================================================================
--- SCRIPT SQL: CORREÇÃO DEFINITIVA DE POLÍTICAS RLS (Row Level Security) NO SUPABASE
+-- SCRIPT SQL: CORREÇÃO RESTRITA DE POLÍTICAS RLS (Row Level Security) NO SUPABASE
 -- PROJETO: Corações que Acolhe - Lar Esperança
--- REGRAS:
---  1. Elimina TODAS as permissões públicas/anônimas de INSERT, UPDATE e DELETE.
---  2. Impede que usuários comuns alterem dados de terceiros ou se tornem administradores.
---  3. Mantém leitura pública necessária (crianças, galeria, banners e chave PIX).
---  4. Respeita as funções reais: Administrador, Família e Padrinho.
---  5. 100% não-destrutivo: Preserva todos os registros e fotos existentes.
+-- REGRAS ESTRITAS DE SEGURANÇA:
+--  1. ALTERAÇÃO E EXCLUSÃO (UPDATE e DELETE): Restritas EXCLUSIVAMENTE a administradores
+--     autorizados para todas as tabelas (crianças, perfis, presentes, galeria, PIX/configurações)
+--     e para a exclusão/modificação de arquivos no Storage.
+--  2. LEITURA PÚBLICA (SELECT): Permitida apenas para os dados públicos essenciais do site
+--     (crianças ativas, galeria institucional, chave PIX/banners e visualização de fotos).
+--  3. PRIVACIDADE TOTAL: Perfis (telefones, e-mails) e presentes não são abertos ao público.
+--  4. PRESERVAÇÃO INTEGRAL: Não apaga nenhum registro, foto ou relacionamento existente.
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
--- 1. HABILITAR RLS EM TODAS AS TABELAS
+-- 1. HABILITAR ROW LEVEL SECURITY (RLS) EM TODAS AS TABELAS
 -- ------------------------------------------------------------------------------
 ALTER TABLE public.kids ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -19,9 +21,9 @@ ALTER TABLE public.gallery ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
 
 -- ------------------------------------------------------------------------------
--- 2. FUNÇÃO AUXILIAR DE SEGURANÇA: is_admin()
--- Verifica com segurança se o usuário atual autenticado possui perfil de administrador
--- Usa SECURITY DEFINER para evitar recursão infinita ao consultar public.profiles
+-- 2. FUNÇÃO DE VERIFICAÇÃO DE ADMINISTRADOR: is_admin()
+-- Consulta a tabela public.profiles com SECURITY DEFINER para verificar se o usuário
+-- autenticado possui role = 'admin' ou 'coordenador', evitando recursão no RLS.
 -- ------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS boolean
@@ -31,6 +33,7 @@ SET search_path = public
 STABLE
 AS $$
   SELECT COALESCE(
+    (auth.jwt() ->> 'role' = 'service_role') OR
     (SELECT role IN ('admin', 'coordenador') 
      FROM public.profiles 
      WHERE id = auth.uid()),
@@ -40,55 +43,51 @@ $$;
 
 -- ------------------------------------------------------------------------------
 -- 3. TABELA: kids (Crianças e Cartinhas)
+-- Relacionamento: family_id -> profiles.id
 -- ------------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Permitir leitura pública de crianças ativas" ON public.kids;
 DROP POLICY IF EXISTS "Permitir leitura pública de crianças" ON public.kids;
+DROP POLICY IF EXISTS "kids_public_read" ON public.kids;
 DROP POLICY IF EXISTS "Permitir inserção e cadastro de crianças" ON public.kids;
 DROP POLICY IF EXISTS "Permitir inserção de crianças" ON public.kids;
+DROP POLICY IF EXISTS "kids_auth_insert" ON public.kids;
 DROP POLICY IF EXISTS "Permitir atualização de crianças" ON public.kids;
+DROP POLICY IF EXISTS "kids_auth_update" ON public.kids;
 DROP POLICY IF EXISTS "Permitir exclusão de crianças" ON public.kids;
+DROP POLICY IF EXISTS "kids_admin_delete" ON public.kids;
 DROP POLICY IF EXISTS "Full access to kids" ON public.kids;
 
--- LEITURA PÚBLICA: Visitantes e padrinhos podem ver as crianças para apadrinhamento
-CREATE POLICY "kids_public_read"
+-- Leitura: Visitantes e padrinhos podem visualizar as crianças cadastradas
+CREATE POLICY "kids_public_select"
   ON public.kids
   FOR SELECT
   USING (true);
 
--- INSERÇÃO: Somente famílias cadastradas (para seus próprios filhos) ou administradores
-CREATE POLICY "kids_auth_insert"
+-- Inserção: Famílias autenticadas cadastram seus dependentes ou administradores
+CREATE POLICY "kids_insert"
   ON public.kids
   FOR INSERT
   WITH CHECK (
     auth.uid() IS NOT NULL 
-    AND (
-      public.is_admin() 
-      OR family_id = auth.uid()
-    )
+    AND (public.is_admin() OR family_id = auth.uid())
   );
 
--- ATUALIZAÇÃO: Somente o titular da família vinculada ou administradores
-CREATE POLICY "kids_auth_update"
+-- Alteração: EXCLUSIVAMENTE administradores autorizados
+CREATE POLICY "kids_admin_update"
   ON public.kids
   FOR UPDATE
-  USING (
-    public.is_admin() 
-    OR family_id = auth.uid()
-  )
-  WITH CHECK (
-    public.is_admin() 
-    OR family_id = auth.uid()
-  );
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
--- EXCLUSÃO: Restrita EXCLUSIVAMENTE a administradores autenticados
+-- Exclusão: EXCLUSIVAMENTE administradores autorizados
 CREATE POLICY "kids_admin_delete"
   ON public.kids
   FOR DELETE
   USING (public.is_admin());
 
 -- ------------------------------------------------------------------------------
--- 4. TABELA: profiles (Perfis de Usuários)
--- Protege dados sensíveis (e-mail, telefone, endereço) e previne escalada de privilégios
+-- 4. TABELA: profiles (Padrinhos, Famílias e Administradores)
+-- Protege informações confidenciais (telefone, e-mail, senhas, documentos)
 -- ------------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Permitir leitura de perfis" ON public.profiles;
 DROP POLICY IF EXISTS "Permitir cadastro de perfis" ON public.profiles;
@@ -99,42 +98,34 @@ DROP POLICY IF EXISTS "Permitir leitura de próprio perfil ou por autenticação
 DROP POLICY IF EXISTS "Permitir cadastro de novo perfil" ON public.profiles;
 DROP POLICY IF EXISTS "Permitir atualização de perfil próprio" ON public.profiles;
 DROP POLICY IF EXISTS "Permitir exclusão de perfil" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_owner_or_admin_read" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_owner_insert" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_owner_or_admin_update" ON public.profiles;
+DROP POLICY IF EXISTS "profiles_admin_delete" ON public.profiles;
 
--- LEITURA: Cada usuário pode ver apenas seu próprio perfil; administradores podem ver todos
-CREATE POLICY "profiles_owner_or_admin_read"
+-- Leitura: Cada usuário autenticado vê seu próprio perfil; administradores veem todos
+CREATE POLICY "profiles_select"
   ON public.profiles
   FOR SELECT
-  USING (
-    auth.uid() = id 
-    OR public.is_admin()
-  );
+  USING (auth.uid() = id OR public.is_admin());
 
--- INSERÇÃO: Usuário autenticado cria seu próprio perfil (NÃO pode se auto-declarar admin)
-CREATE POLICY "profiles_owner_insert"
+-- Inserção: Novos usuários criam perfil vinculado ao seu UID (sem privilégio de admin)
+CREATE POLICY "profiles_insert"
   ON public.profiles
   FOR INSERT
   WITH CHECK (
-    auth.uid() = id
+    auth.uid() = id 
     AND (role != 'admin' OR public.is_admin())
   );
 
--- ATUALIZAÇÃO: Usuário edita apenas seu próprio perfil (NÃO pode alterar o role para admin)
-CREATE POLICY "profiles_owner_or_admin_update"
+-- Alteração: Usuário edita seus dados pessoais (sem alterar role) ou administradores
+CREATE POLICY "profiles_update"
   ON public.profiles
   FOR UPDATE
-  USING (
-    auth.uid() = id 
-    OR public.is_admin()
-  )
-  WITH CHECK (
-    public.is_admin() 
-    OR (
-      auth.uid() = id 
-      AND role != 'admin'
-    )
-  );
+  USING (public.is_admin() OR (auth.uid() = id AND role != 'admin'))
+  WITH CHECK (public.is_admin() OR (auth.uid() = id AND role != 'admin'));
 
--- EXCLUSÃO: Somente administradores podem excluir perfis
+-- Exclusão: EXCLUSIVAMENTE administradores autorizados
 CREATE POLICY "profiles_admin_delete"
   ON public.profiles
   FOR DELETE
@@ -142,6 +133,7 @@ CREATE POLICY "profiles_admin_delete"
 
 -- ------------------------------------------------------------------------------
 -- 5. TABELA: gifts (Presentes e Apadrinhamentos)
+-- Relacionamentos: kid_id -> kids.id, sponsor_id -> profiles.id
 -- ------------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Permitir leitura de presentes" ON public.gifts;
 DROP POLICY IF EXISTS "Permitir inserção de presentes" ON public.gifts;
@@ -149,9 +141,13 @@ DROP POLICY IF EXISTS "Permitir atualização de presentes" ON public.gifts;
 DROP POLICY IF EXISTS "Permitir exclusão de presentes" ON public.gifts;
 DROP POLICY IF EXISTS "Permitir leitura de presentes vinculados" ON public.gifts;
 DROP POLICY IF EXISTS "Permitir registro de presentes" ON public.gifts;
+DROP POLICY IF EXISTS "gifts_parties_or_admin_read" ON public.gifts;
+DROP POLICY IF EXISTS "gifts_sponsor_insert" ON public.gifts;
+DROP POLICY IF EXISTS "gifts_sponsor_or_admin_update" ON public.gifts;
+DROP POLICY IF EXISTS "gifts_sponsor_or_admin_delete" ON public.gifts;
 
--- LEITURA: Apenas o padrinho que apadrinhou, a família da criança apadrinhada, ou administradores
-CREATE POLICY "gifts_parties_or_admin_read"
+-- Leitura: Padrinho vê seus apadrinhamentos; família vê os de sua criança; admin vê todos
+CREATE POLICY "gifts_select"
   ON public.gifts
   FOR SELECT
   USING (
@@ -164,39 +160,27 @@ CREATE POLICY "gifts_parties_or_admin_read"
     )
   );
 
--- INSERÇÃO: Somente padrinhos autenticados vinculando seu próprio sponsor_id ou administradores
-CREATE POLICY "gifts_sponsor_insert"
+-- Inserção: Padrinhos autenticados vinculando seu próprio ID ou administradores
+CREATE POLICY "gifts_insert"
   ON public.gifts
   FOR INSERT
   WITH CHECK (
-    auth.uid() IS NOT NULL
-    AND (
-      auth.uid() = sponsor_id 
-      OR public.is_admin()
-    )
+    auth.uid() IS NOT NULL 
+    AND (auth.uid() = sponsor_id OR public.is_admin())
   );
 
--- ATUALIZAÇÃO: Apenas o padrinho titular do presente ou administradores
-CREATE POLICY "gifts_sponsor_or_admin_update"
+-- Alteração: EXCLUSIVAMENTE administradores autorizados (garante integridade do presente)
+CREATE POLICY "gifts_admin_update"
   ON public.gifts
   FOR UPDATE
-  USING (
-    auth.uid() = sponsor_id 
-    OR public.is_admin()
-  )
-  WITH CHECK (
-    auth.uid() = sponsor_id 
-    OR public.is_admin()
-  );
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
--- EXCLUSÃO: Apenas o próprio padrinho ou administradores
-CREATE POLICY "gifts_sponsor_or_admin_delete"
+-- Exclusão: EXCLUSIVAMENTE administradores autorizados
+CREATE POLICY "gifts_admin_delete"
   ON public.gifts
   FOR DELETE
-  USING (
-    auth.uid() = sponsor_id 
-    OR public.is_admin()
-  );
+  USING (public.is_admin());
 
 -- ------------------------------------------------------------------------------
 -- 6. TABELA: gallery (Mídias e Fotos do Lar Esperança)
@@ -205,25 +189,31 @@ DROP POLICY IF EXISTS "Permitir leitura da galeria" ON public.gallery;
 DROP POLICY IF EXISTS "Permitir inserção na galeria" ON public.gallery;
 DROP POLICY IF EXISTS "Permitir atualização na galeria" ON public.gallery;
 DROP POLICY IF EXISTS "Permitir exclusão na galeria" ON public.gallery;
+DROP POLICY IF EXISTS "gallery_public_read" ON public.gallery;
+DROP POLICY IF EXISTS "gallery_admin_insert" ON public.gallery;
+DROP POLICY IF EXISTS "gallery_admin_update" ON public.gallery;
+DROP POLICY IF EXISTS "gallery_admin_delete" ON public.gallery;
 
--- LEITURA PÚBLICA: Qualquer visitante pode visualizar as fotos do Lar
-CREATE POLICY "gallery_public_read"
+-- Leitura: Visitantes do site podem ver as fotos da galeria
+CREATE POLICY "gallery_public_select"
   ON public.gallery
   FOR SELECT
   USING (true);
 
--- GRAVAÇÃO E GESTÃO: Exclusivo para administradores
+-- Inserção: EXCLUSIVAMENTE administradores autorizados
 CREATE POLICY "gallery_admin_insert"
   ON public.gallery
   FOR INSERT
   WITH CHECK (public.is_admin());
 
+-- Alteração: EXCLUSIVAMENTE administradores autorizados
 CREATE POLICY "gallery_admin_update"
   ON public.gallery
   FOR UPDATE
   USING (public.is_admin())
   WITH CHECK (public.is_admin());
 
+-- Exclusão: EXCLUSIVAMENTE administradores autorizados
 CREATE POLICY "gallery_admin_delete"
   ON public.gallery
   FOR DELETE
@@ -234,14 +224,16 @@ CREATE POLICY "gallery_admin_delete"
 -- ------------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Permitir leitura de site_settings" ON public.site_settings;
 DROP POLICY IF EXISTS "Permitir gravação de site_settings" ON public.site_settings;
+DROP POLICY IF EXISTS "site_settings_public_read" ON public.site_settings;
+DROP POLICY IF EXISTS "site_settings_admin_all" ON public.site_settings;
 
--- LEITURA PÚBLICA: Visitantes precisam visualizar banners e chave PIX para doar
-CREATE POLICY "site_settings_public_read"
+-- Leitura: Visitantes podem visualizar os banners e a chave PIX para doações
+CREATE POLICY "site_settings_public_select"
   ON public.site_settings
   FOR SELECT
   USING (true);
 
--- GRAVAÇÃO (INSERT/UPDATE/DELETE): Restrita rigorosamente a administradores
+-- Alteração/Gravação/Exclusão (PIX e banners): EXCLUSIVAMENTE administradores autorizados
 CREATE POLICY "site_settings_admin_all"
   ON public.site_settings
   FOR ALL
@@ -249,7 +241,7 @@ CREATE POLICY "site_settings_admin_all"
   WITH CHECK (public.is_admin());
 
 -- ------------------------------------------------------------------------------
--- 8. SUPABASE STORAGE: BUCKETS 'media' E 'site'
+-- 8. SUPABASE STORAGE: BUCKETS 'media' E 'site' (Arquivos e Fotos)
 -- ------------------------------------------------------------------------------
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('media', 'media', true)
@@ -262,15 +254,18 @@ ON CONFLICT (id) DO UPDATE SET public = true;
 DROP POLICY IF EXISTS "Permitir acesso público de leitura aos arquivos de mídia" ON storage.objects;
 DROP POLICY IF EXISTS "Permitir upload de mídias" ON storage.objects;
 DROP POLICY IF EXISTS "Permitir exclusão de mídias" ON storage.objects;
+DROP POLICY IF EXISTS "storage_public_read" ON storage.objects;
+DROP POLICY IF EXISTS "storage_auth_upload" ON storage.objects;
+DROP POLICY IF EXISTS "storage_admin_delete" ON storage.objects;
 
--- LEITURA PÚBLICA: Navegadores e visitantes podem baixar e exibir fotos
-CREATE POLICY "storage_public_read"
+-- Leitura: Navegadores e visitantes podem carregar e exibir as fotos públicas
+CREATE POLICY "storage_public_select"
   ON storage.objects
   FOR SELECT
   USING (bucket_id IN ('media', 'site'));
 
--- UPLOAD: Somente usuários autenticados (famílias enviando fotos de cartinhas ou administradores)
-CREATE POLICY "storage_auth_upload"
+-- Inserção (Upload): Usuários autenticados (famílias enviando foto de cartinha ou admins)
+CREATE POLICY "storage_upload"
   ON storage.objects
   FOR INSERT
   WITH CHECK (
@@ -278,19 +273,29 @@ CREATE POLICY "storage_auth_upload"
     AND auth.role() = 'authenticated'
   );
 
--- EXCLUSÃO: Restrita a administradores ou ao proprietário do arquivo
+-- Alteração de arquivos: EXCLUSIVAMENTE administradores autorizados
+CREATE POLICY "storage_admin_update"
+  ON storage.objects
+  FOR UPDATE
+  USING (
+    bucket_id IN ('media', 'site')
+    AND public.is_admin()
+  )
+  WITH CHECK (
+    bucket_id IN ('media', 'site')
+    AND public.is_admin()
+  );
+
+-- Exclusão de arquivos: EXCLUSIVAMENTE administradores autorizados
 CREATE POLICY "storage_admin_delete"
   ON storage.objects
   FOR DELETE
   USING (
     bucket_id IN ('media', 'site')
-    AND (
-      public.is_admin() 
-      OR (auth.uid() IS NOT NULL AND auth.uid()::text = (storage.foldername(name))[1])
-    )
+    AND public.is_admin()
   );
 
 -- ==============================================================================
--- FIM DO SCRIPT: Execute no SQL Editor do seu Dashboard Supabase.
--- Garante segurança máxima sem comprometer nenhum dado existente.
+-- FIM DO SCRIPT
+-- Execute no SQL Editor do seu Dashboard Supabase quando for aplicar.
 -- ==============================================================================

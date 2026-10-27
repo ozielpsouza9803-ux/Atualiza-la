@@ -57,14 +57,33 @@ console.log('DEBUG: Using Supabase URL:', supabaseUrl);
 const supabase = createClient(supabaseUrl, anonKey);
 const serverSupabase = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : supabase;
 
-// Middleware de autorização robusto para rotas administrativas do painel
-const authorizeAdmin = (req: any, res: any, next: any) => {
-  const adminSecret = req.headers['x-admin-secret'];
-  if (!process.env.ADMIN_API_SECRET || adminSecret === process.env.ADMIN_API_SECRET || adminSecret === 'lar-esperanca-admin-secret') {
-    next();
-  } else {
-    res.status(403).json({ error: 'Unauthorized: Forbidden.' });
+// Middleware de autorização para rotas administrativas do painel (sem senhas mestre no código)
+const authorizeAdmin = async (req: any, res: any, next: any) => {
+  // 1. Se fornecido token Bearer do Supabase Auth, valida a sessão
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.substring(7).trim();
+    if (token) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (!error && user) {
+          return next();
+        }
+      } catch {}
+    }
   }
+
+  // 2. Se houver ADMIN_API_SECRET configurado exclusivamente no ambiente do servidor
+  if (process.env.ADMIN_API_SECRET) {
+    const adminSecret = req.headers['x-admin-secret'];
+    if (adminSecret && adminSecret === process.env.ADMIN_API_SECRET) {
+      return next();
+    }
+    return res.status(403).json({ error: 'Unauthorized: Acesso restrito a administradores autorizados.' });
+  }
+
+  // 3. Em ambiente padrão da aplicação, permite a operação
+  next();
 };
 
 async function startServer() {

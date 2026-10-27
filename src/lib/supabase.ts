@@ -56,12 +56,24 @@ export async function testSupabaseConnection(): Promise<{ ok: boolean; message: 
   }
 }
 
+async function getApiHeaders(extraHeaders: Record<string, string> = {}): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    ...extraHeaders
+  };
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data?.session?.access_token) {
+      headers['Authorization'] = `Bearer ${data.session.access_token}`;
+    }
+  } catch {}
+  return headers;
+}
+
 export async function fetchAllSupabaseData(): Promise<SupabaseDataResult | null> {
   // 1. Tentar rota de API backend se disponível (utiliza SUPABASE_SERVICE_ROLE_KEY no servidor de forma protegida)
   try {
-    const apiRes = await fetch('/api/supabase/data', {
-      headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
-    });
+    const headers = await getApiHeaders();
+    const apiRes = await fetch('/api/supabase/data', { headers });
     const contentType = apiRes.headers.get('content-type') || '';
     // Garante que é JSON e não página HTML de redirecionamento de hospedagem estática
     if (apiRes.ok && contentType.includes('application/json')) {
@@ -177,15 +189,12 @@ export async function createKidInSupabase(input: KidInput) {
 
   // 1. Tentar via backend Express
   try {
+    const headers = await getApiHeaders({ 'Content-Type': 'application/json' });
     const apiRes = await fetch('/api/supabase/kids', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-admin-secret': 'lar-esperanca-admin-secret'
-      },
+      headers,
       body: JSON.stringify(row)
     });
-
     const json = await apiRes.json().catch(() => null);
     if (apiRes.ok && json?.data) {
       return { data: json.data, error: null };
@@ -234,12 +243,10 @@ export async function updateKidInSupabase(id: string, updates: Partial<KidInput>
 
   // 1. Tentar via backend Express
   try {
+    const headers = await getApiHeaders({ 'Content-Type': 'application/json' });
     const apiRes = await fetch(`/api/supabase/kids/${id}`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-admin-secret': 'lar-esperanca-admin-secret'
-      },
+      headers,
       body: JSON.stringify(row)
     });
 
@@ -271,9 +278,10 @@ export async function updateKidInSupabase(id: string, updates: Partial<KidInput>
  */
 export async function deleteKidInSupabase(id: string) {
   try {
+    const headers = await getApiHeaders();
     const apiRes = await fetch(`/api/supabase/kids/${id}`, {
       method: 'DELETE',
-      headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
+      headers
     });
 
     const json = await apiRes.json().catch(() => null);
@@ -298,9 +306,10 @@ export async function deleteKidInSupabase(id: string) {
  */
 export async function deleteProfileInSupabase(id: string) {
   try {
+    const headers = await getApiHeaders();
     const apiRes = await fetch(`/api/supabase/profiles/${id}`, {
       method: 'DELETE',
-      headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
+      headers
     });
 
     const json = await apiRes.json().catch(() => null);
@@ -351,12 +360,10 @@ export async function updateProfileInSupabase(id: string, updates: ProfileUpdate
   if (updates.postal_code !== undefined) row.postal_code = updates.postal_code;
 
   try {
+    const headers = await getApiHeaders({ 'Content-Type': 'application/json' });
     const apiRes = await fetch(`/api/supabase/profiles/${id}`, {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-admin-secret': 'lar-esperanca-admin-secret'
-      },
+      headers,
       body: JSON.stringify(row)
     });
 
@@ -413,12 +420,10 @@ export async function uploadGalleryPhotoToSupabase(
 
     // 1. Tentar upload seguro via backend proxy
     try {
+      const headers = await getApiHeaders({ 'Content-Type': 'application/json' });
       const apiRes = await fetch('/api/supabase/gallery/upload', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-secret': 'lar-esperanca-admin-secret'
-        },
+        headers,
         body: JSON.stringify({
           fileName: file.name,
           contentType: file.type || 'image/jpeg',
@@ -508,12 +513,10 @@ export async function deleteGalleryPhotoFromSupabase(target: {
   try {
     // 1. Tentar via backend proxy
     try {
+      const headers = await getApiHeaders({ 'Content-Type': 'application/json' });
       const apiRes = await fetch('/api/supabase/gallery', {
         method: 'DELETE',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-secret': 'lar-esperanca-admin-secret'
-        },
+        headers,
         body: JSON.stringify(target)
       });
       if (apiRes.ok) {
@@ -555,9 +558,8 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
   try {
     // 1. Tentar backend
     try {
-      const apiRes = await fetch('/api/supabase/gallery', {
-        headers: { 'x-admin-secret': 'lar-esperanca-admin-secret' }
-      });
+      const headers = await getApiHeaders();
+      const apiRes = await fetch('/api/supabase/gallery', { headers });
       if (apiRes.ok) {
         const json = await apiRes.json();
         if (json.data && Array.isArray(json.data)) {
@@ -594,12 +596,10 @@ export async function fetchGalleryFromSupabase(): Promise<GalleryPhotoRecord[]> 
  */
 export async function updateSiteSettingsInSupabase(slidesData: any) {
   try {
+    const headers = await getApiHeaders({ 'Content-Type': 'application/json' });
     const apiRes = await fetch('/api/supabase/settings', {
       method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        'x-admin-secret': 'lar-esperanca-admin-secret'
-      },
+      headers,
       body: JSON.stringify({ slides: slidesData })
     });
     const json = await apiRes.json().catch(() => null);
@@ -638,12 +638,10 @@ export async function createProfileInSupabase(input: { name: string; email?: str
   };
 
   try {
+    const headers = await getApiHeaders({ 'Content-Type': 'application/json' });
     const apiRes = await fetch('/api/supabase/profiles', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-admin-secret': 'lar-esperanca-admin-secret'
-      },
+      headers,
       body: JSON.stringify(row)
     });
     const json = await apiRes.json().catch(() => null);

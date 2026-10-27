@@ -19,6 +19,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import confetti from 'canvas-confetti';
 import { 
   supabase, 
+  SUPABASE_CLEAN_URL,
   fetchAllSupabaseData, 
   createKidInSupabase, 
   updateKidInSupabase, 
@@ -74,6 +75,7 @@ interface Child {
   desiredGift?: string;
   shoeSize?: string;
   clothesSize?: string;
+  approved?: boolean;
 }
 
 interface LocalAppNotification {
@@ -1747,7 +1749,7 @@ export default function App() {
           const photoUrl = k.photo_path 
             ? (k.photo_path.startsWith('http') || k.photo_path.startsWith('data:') 
                 ? k.photo_path 
-                : `https://utrpckrchcbqgzbhvlzy.supabase.co/storage/v1/object/public/media/${k.photo_path}`)
+                : `${SUPABASE_CLEAN_URL}/storage/v1/object/public/media/${k.photo_path}`)
             : (k.image || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=400&h=400&fit=crop');
 
           const familyProf = (data.profiles || []).find((p: any) => p.id === k.family_id);
@@ -1770,7 +1772,8 @@ export default function App() {
             wishlist,
             desiredGift: desiredGift || '',
             shoeSize: shoeSize || '',
-            clothesSize: clothesSize || ''
+            clothesSize: clothesSize || '',
+            approved: k.approved !== false
           };
         });
         // Lógica de mesclagem: Dados do banco são a verdade absoluta.
@@ -1790,7 +1793,8 @@ export default function App() {
             const existsInDbByName = mappedKids.some(mk => mk.name?.trim().toLowerCase() === lpName);
             if (existsInDbByName) return false;
 
-            return true;
+            // Mantém apenas itens locais temporários em rascunho
+            return lp.id?.startsWith('kid_') || lp.id?.startsWith('local_');
           });
 
           const merged = [...mappedKids, ...trulyLocalOnly];
@@ -1810,11 +1814,11 @@ export default function App() {
           if (merged[0]) setSelectedChild(merged[0]);
           return merged;
         });
-      } else if (data.kids && data.kids.length === 0) {
-        // Se o banco retornar vazio explicitamente (e não for erro de conexão), limpamos a lista mas mantemos os locais se houver
+      } else if (data.kids && data.kids.length === 0 && !data.error) {
+        // Se o banco retornar vazio explicitamente e não for erro de rede, preserva dados existentes
         setChildrenList(prev => {
-          const trulyLocalOnly = prev.filter(lp => lp.id?.startsWith('kid_fam_') || lp.id?.startsWith('local_'));
-          return trulyLocalOnly.length > 0 ? trulyLocalOnly : INITIAL_CHILDREN;
+          const trulyLocalOnly = prev.filter(lp => lp.id?.startsWith('kid_') || lp.id?.startsWith('local_'));
+          return trulyLocalOnly.length > 0 ? trulyLocalOnly : prev;
         });
       }
 
@@ -4565,19 +4569,19 @@ export default function App() {
                     onClick={() => setSearchCategoryFilter('all')}
                     className={`px-3 py-1 rounded-xl font-bold transition ${searchCategoryFilter === 'all' ? 'bg-pink-600 text-white shadow' : 'bg-[#2A1840] text-purple-300 border border-purple-500/20'}`}
                   >
-                    Todas ({childrenList.length})
+                    Todas ({childrenList.filter(c => c.approved !== false).length})
                   </button>
                   <button 
                     onClick={() => setSearchCategoryFilter('waiting')}
                     className={`px-3 py-1 rounded-xl font-bold transition ${searchCategoryFilter === 'waiting' ? 'bg-amber-500 text-black shadow' : 'bg-[#2A1840] text-purple-300 border border-purple-500/20'}`}
                   >
-                    Aguardando ({childrenList.filter(c => c.status === 'Aguardando Apadrinhamento').length})
+                    Aguardando ({childrenList.filter(c => c.approved !== false && c.status === 'Aguardando Apadrinhamento').length})
                   </button>
                   <button 
                     onClick={() => setSearchCategoryFilter('sponsored')}
                     className={`px-3 py-1 rounded-xl font-bold transition ${searchCategoryFilter === 'sponsored' ? 'bg-emerald-600 text-white shadow' : 'bg-[#2A1840] text-purple-300 border border-purple-500/20'}`}
                   >
-                    Apadrinhadas ({childrenList.filter(c => c.status === 'Apadrinhado').length})
+                    Apadrinhadas ({childrenList.filter(c => c.approved !== false && c.status === 'Apadrinhado').length})
                   </button>
                 </div>
               </div>
@@ -4750,6 +4754,7 @@ export default function App() {
                 {(() => {
                   const q = searchQuery.toLowerCase().trim();
                   const filtered = childrenList.filter(child => {
+                    if (child.approved === false) return false;
                     const matchesQuery = !q || 
                       child.name.toLowerCase().includes(q) || 
                       child.dream.toLowerCase().includes(q) || 
@@ -9954,10 +9959,10 @@ export default function App() {
                 {sponsorTab === 'sponsor_more' && (
                   <div className="space-y-3">
                     <h3 className="text-xs font-bold text-amber-300">Escolha Crianças para Apadrinhar (Clique para Apoiar):</h3>
-                    {childrenList.filter(c => c.status !== 'Apadrinhado').length === 0 ? (
+                    {childrenList.filter(c => c.approved !== false && c.status !== 'Apadrinhado').length === 0 ? (
                       <p className="text-xs text-purple-300 italic p-3 bg-[#2A1840] rounded-2xl">Todas as crianças já foram apadrinhadas! Muito obrigado pelo carinho.</p>
                     ) : (
-                      childrenList.filter(c => c.status !== 'Apadrinhado').map((c, i) => (
+                      childrenList.filter(c => c.approved !== false && c.status !== 'Apadrinhado').map((c, i) => (
                         <div key={i} className="p-3.5 rounded-2xl bg-[#2A1840] border border-purple-500/30 flex items-center justify-between shadow">
                           <div className="flex items-center space-x-3">
                             <div 
@@ -10284,7 +10289,7 @@ export default function App() {
 
               {/* Grid de Crianças Melhorado */}
               <div className="grid grid-cols-2 gap-3.5 pb-8">
-                {childrenList.filter(c => !searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase())).map((c, idx) => (
+                {childrenList.filter(c => c.approved !== false && (!searchQuery || c.name.toLowerCase().includes(searchQuery.toLowerCase()))).map((c, idx) => (
                   <div key={c.id || idx} className="bg-gradient-to-b from-[#2A1840] to-[#1A1033] p-3 rounded-[28px] border border-purple-500/25 flex flex-col space-y-3 shadow-xl group transition hover:border-pink-500/50">
                     <div 
                       className="w-full aspect-square rounded-[20px] overflow-hidden border-2 border-pink-500 select-none pointer-events-auto cursor-pointer relative shadow-inner"
